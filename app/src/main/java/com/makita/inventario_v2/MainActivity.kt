@@ -1505,7 +1505,8 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 
                             ultimaubicacion = item.ubicacion
 
-                        } }
+                        }
+                    }
                 } catch (e: Exception) {
                     Log.e("ErrorAPI", "Error al obtener la ubicación", e)
                 }
@@ -1668,127 +1669,103 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 
 
                     LaunchedEffect(extractedText) {
-                        if (extractedText.isNullOrEmpty()) {
-                            Toast.makeText(
-                                context,
-                                "Seleccione Item correcto para el Tipo de Item",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@LaunchedEffect
-                        }
-
-                        if (isNetworkAvailable(context)) {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    val response35 = try {
-                                        apiService.validarTipoItem(extractedText.trim(), gTipoItem)
-                                    } catch (e: IOException) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(
-                                                context,
-                                                "Error de conexión al validar el tipo de ítem",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            errorMessage =
-                                                "Error de conexión al validar el tipo de ítem"
-                                            showErrorDialog = true
-                                        }
-                                        return@launch
-                                    }
-
-                                    withContext(Dispatchers.Main) {
-                                        if (response35 == "NO") {
-                                            Log.d(
-                                                "*MAKITA*AQUI*",
-                                                "RESPUESTA NO - ENTRA validarTipoItem: $response35"
-                                            )
-
-                                            textFieldValue2 = ""
-                                            val mensajeError =
-                                                "Item: ${extractedText.trim()} NO CORRESPONDE A $gTipoItem"
-                                            Log.d(
-                                                "*MAKITA*AQUI*",
-                                                "NO ENTRA API validarTipoItem: $mensajeError"
-                                            )
-
-                                            // Mostrar un diálogo de error
-                                            mostrarDialogo3(context, "Error", mensajeError)
-
-                                            // Limpiar valores
-                                            text = ""
-                                            ubicacion = ""
-                                            extractedText = ""
-                                            extractedText2 = ""
-                                            extractedText3 = ""
-                                            extractedText4 = ""
-                                            cantidad = ""
-                                            response = emptyList()
-
-                                            // Enfocar el campo nuevamente
-                                            ubicacionFocusRequester.requestFocus()
-
-                                            return@withContext
-                                        }
-                                    }
-
-                                    // Solo si response35 NO es "NO", ejecuta la segunda API
-                                    val apiResponse = apiService.obtenerUbicacionItem(extractedText)
-                                    Log.d("*MAKITA*", "PASA A obtenerUbicacionItem: $apiResponse")
-
-                                    withContext(Dispatchers.Main) {
-                                        response = apiResponse
-
-                                        if (apiResponse.isNullOrEmpty()) {
-                                            Log.d("*MAKITA*", "ES XX EMPTY: $apiResponse")
-                                            errorState =
-                                                "No se encontraron datos para el item proporcionado"
-                                        } else {
-                                            errorState = null
-
-                                            val tieneValoresNulos =
-                                                apiResponse.any { it.item == null }
-                                            if (tieneValoresNulos) {
-                                                errorMessage =
-                                                    "Advertencia! No existe última Ubicación"
+                        // Validamos si extractedText no está vacío antes de proceder
+                        if (extractedText.isNotEmpty()) {
+                            if (isNetworkAvailable(context)) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        val response35 = try {
+                                            apiService.validarTipoItem(extractedText.trim(), gTipoItem)
+                                        } catch (e: IOException) {
+                                            withContext(Dispatchers.Main) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Error de conexión al validar el tipo de ítem",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                errorMessage = "Error de conexión al validar el tipo de ítem"
                                                 showErrorDialog = true
-                                                text = ""
-                                                extractedText2 = ""
+                                            }
+                                            return@launch
+                                        }
+
+                                        withContext(Dispatchers.Main) {
+                                            if (response35 == "NO") {
+                                                Log.d("*MAKITA*AQUI*", "RESPUESTA NO - ENTRA validarTipoItem: $response35")
+
                                                 textFieldValue2 = ""
+                                                val mensajeError = "Item: ${extractedText.trim()} NO CORRESPONDE A $gTipoItem"
+                                                Log.d("*MAKITA*AQUI*", "NO ENTRA API validarTipoItem: $mensajeError")
+
+                                                // Mostrar un diálogo de error
+                                                mostrarDialogo3(context, "Error", mensajeError)
+
+                                                // Limpiar valores
+                                                text = ""
+                                                ubicacion = ""
+                                                extractedText = ""
+                                                extractedText2 = ""
+                                                extractedText3 = ""
+                                                extractedText4 = ""
+                                                cantidad = ""
                                                 response = emptyList()
-                                                itemFocusRequester.requestFocus()
+
+                                                // Enfocar el campo nuevamente
+                                                ubicacionFocusRequester.requestFocus()
+
+                                                return@withContext
+                                            }
+                                        }
+
+                                        // Solo si response35 NO es "NO", ejecuta la segunda API
+                                        val apiResponse = apiService.obtenerUbicacionItem(extractedText)
+                                        Log.d("*MAKITA*", "PASA A obtenerUbicacionItem: $apiResponse")
+
+                                        withContext(Dispatchers.Main) {
+                                            response = apiResponse
+
+                                            if (apiResponse.isNullOrEmpty()) {
+                                                Log.d("*MAKITA*", "ES XX EMPTY: $apiResponse")
+                                                errorState = "No se encontraron datos para el item proporcionado"
                                             } else {
-                                                response2 = apiResponse
-                                                if (response2.isNotEmpty()) {
-                                                    textFieldValue2 = response2.first().descripcion
+                                                errorState = null
+
+                                                val tieneValoresNulos = apiResponse.any { it.item == null }
+                                                if (tieneValoresNulos) {
+                                                    errorMessage = "Advertencia! No existe última Ubicación"
+                                                    showErrorDialog = true
+                                                    text = ""
+                                                    extractedText2 = ""
+                                                    textFieldValue2 = ""
+                                                    response = emptyList()
+                                                    itemFocusRequester.requestFocus()
+                                                } else {
+                                                    response2 = apiResponse
+                                                    if (response2.isNotEmpty()) {
+                                                        textFieldValue2 = response2.first().descripcion
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                } catch (e: Exception) {
-                                    withContext(Dispatchers.Main) {
-                                        Toast.makeText(
-                                            context,
-                                            "Error al obtener los datos: ${e.message}",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        errorMessage = "Error al obtener los datos: ${e.message}"
-                                        showErrorDialog = true
-                                        text = ""
-                                        extractedText2 = ""
-                                        textFieldValue2 = ""
-                                        response = emptyList()
-                                        itemFocusRequester.requestFocus()
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Error al obtener los datos 01: ${e.message}", Toast.LENGTH_LONG).show()
+                                            errorMessage = "Error al obtener los datos 02: ${e.message}"
+                                            showErrorDialog = true
+                                            text = ""
+                                            extractedText2 = ""
+                                            textFieldValue2 = ""
+                                            response = emptyList()
+                                            itemFocusRequester.requestFocus()
+                                        }
                                     }
                                 }
+                            } else {
+                                Toast.makeText(context, "No hay conexión a Internet", Toast.LENGTH_SHORT).show()
                             }
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "No hay conexión a Internet",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
                     }
+
 
                 }
 
@@ -1950,21 +1927,9 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
                     Button(
                         onClick = {
                             if (extractedText.isNotEmpty()) {
-
-
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
-
-                                        // AQUI VALIDAR ANTES DE GRABAR c//
-                                        ///val isUbicacionValida = ValidarUbicacionProducto(extractedText2.trim())
-
                                         var FechaFija = formatoFechaSS(System.currentTimeMillis())
-
-                                        //Log.e("*MAKITA*ACA*0*", "ValidaFechaFija : ${FechaFija}")
-                                        //Log.e("*MAKITA*ACA*1*", "ValidaFechaFija : ${extractedText.trim()}")
-                                        //Log.e("*MAKITA*ACA*2*", "ValidaFechaFija : ${extractedText2.trim()}")
-
-                                            //AQUI VALIDO UBICACION BMB
                                         val Usuario = gnombreDispositivo
 
                                         try{
@@ -2041,18 +2006,15 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 
 
                                                 ////
-                                                }
                                             }
-                                            catch (e: Exception)
-                                            {
+                                        }
+                                        catch (e: Exception)
+                                        {
 
-                                                Log.e("*MAKITA*", "Error Consultar API valida si ya : ${e.message}")
-                                                errorState =
-                                                    "Error al consultar: ${e.message}"
-                                            }
-
-
-
+                                            Log.e("*MAKITA*", "Error Consultar API valida si ya : ${e.message}")
+                                            errorState =
+                                                "Error al consultar: ${e.message}"
+                                        }
                                     } catch (e: Exception) {
 
                                         Log.e("*MAKITA*", "Error Grabar 1: ${e.message}")
@@ -2125,10 +2087,6 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
                             modifier = Modifier.padding(top = 8.dp))
 
                     }
-
-
-
-
                 }
             }
 
