@@ -6,7 +6,6 @@ import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.http.HttpException
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -102,12 +100,14 @@ import java.util.Locale
 import java.util.TimeZone
 import java.io.File
 import android.provider.Settings
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import java.io.IOException
 
 
 class MainActivity : ComponentActivity()
 {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -121,17 +121,13 @@ class MainActivity : ComponentActivity()
 @Composable
 fun CambiarColorBarraEstado(color: Color, darkIcons: Boolean = true) {
     val view = LocalView.current
-
     val composeColor = androidx.compose.ui.graphics.Color(0xFF00909E)
-
-
     val argbColor = android.graphics.Color.argb(
         (composeColor.alpha * 255).toInt(),
         (composeColor.red * 255).toInt(),
         (composeColor.green * 255).toInt(),
         (composeColor.blue * 255).toInt()
     )
-
 
     if (!view.isInEditMode) {
         SideEffect {
@@ -159,9 +155,10 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "second_screen/{param}/{param2}",
+            route = "second_screen/{param}/{param2}/{usuarioAsignado}",
             arguments = listOf(navArgument("param")  { type = NavType.StringType },
-                               navArgument("param2") { type = NavType.StringType }
+                               navArgument("param2") { type = NavType.StringType },
+                navArgument("usuarioAsignado") { type = NavType.StringType }
                         )
         ) { backStackEntry ->
 
@@ -170,27 +167,31 @@ fun AppNavigation() {
             //val param2 = backStackEntry.arguments?.getString("param2") ?: ""
             val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
+            val usuarioAsignado = backStackEntry.arguments?.getString("usuarioAsignado")
 
-            SecondScreen(navController = navController, param = param, param2 = param2)
+            if (usuarioAsignado != null) {
+                SecondScreen(navController = navController, param = param, param2 = param2 , usuarioAsignado = usuarioAsignado)
+            }
 
 
         }
 
         composable(
-            route = "third_screen/{param}/{param2}",
+            route = "third_screen/{param}/{param2}/{usuarioAsignado}",
             arguments = listOf(navArgument("param")  { type = NavType.StringType },
                 navArgument("param2") { type = NavType.StringType }
             )
         ) { backStackEntry ->
 
 
-            //val param  = backStackEntry.arguments?.getString("param")
-            //val param2 = backStackEntry.arguments?.getString("param2") ?: ""
+            val usuarioAsignado = backStackEntry.arguments?.getString("usuarioAsignado")
             val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
 
 
-                TerceraScreen(navController = navController, param = param, param2 = param2)
+            if (usuarioAsignado != null) {
+                TerceraScreen(navController = navController, param = param, param2 = param2 , usuarioAsignado= usuarioAsignado)
+            }
 
 
 
@@ -214,16 +215,13 @@ fun MainScreen(navController: NavController) {
     val day = calendar.get(Calendar.DAY_OF_MONTH)
 
     val context = LocalContext.current
-    var expanded by remember { mutableStateOf(false) } // Controla si el menú está desplegado
-    // var selectedOption by remember { mutableStateOf("Selecciona una opción") } // Opción seleccionada
     var selectedOption by remember { mutableStateOf("") } // Estado global
     var selectedTipo   by remember { mutableStateOf("") } // Estado global
     var selectedLocal  by remember { mutableStateOf("") } // Estado global
-    val timestamp = formatTimestamp(System.currentTimeMillis())
     var showError by remember { mutableStateOf(false) }
-   // val context = LocalContext.current
     val activity = context as? Activity
 
+    var usuarioAsignado by remember { mutableStateOf("") }
 
     // Configuración del DatePickerDialog
     val datePickerDialog = DatePickerDialog(
@@ -234,17 +232,12 @@ fun MainScreen(navController: NavController) {
         year, month, day
     )
 
-
     CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
 
     Surface(
-        //  color = MaterialTheme.colorScheme.background, // Fondo primario
-        // contentColor = Color.White, // Color del contenido
-        shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.padding(16.dp) // Espaciado alrededor
-
+      shape = RoundedCornerShape(8.dp),
+      modifier = Modifier.padding(16.dp) // Espaciado alrededor
     )
-
 
     {
         Column(
@@ -267,6 +260,12 @@ fun MainScreen(navController: NavController) {
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            UsuarioAsignadoScreen(
+                context = LocalContext.current,
+                onUsuarioAsignadoChange = { nuevoUsuario -> usuarioAsignado = nuevoUsuario } // Recibe el usuario del hijo
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -308,14 +307,15 @@ fun MainScreen(navController: NavController) {
 
 
                 if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS")
-                { // Reemplaza "specific_option" con la opción deseada
-                    navController.navigate("third_screen/$selectedTipo/$selectedLocal")
+                {
+
+                    Log.d("MAKITA" , "variables enviadas tercera $selectedTipo - $selectedLocal - $usuarioAsignado")
+                    navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioAsignado")
                 } else {
-                    navController.navigate("second_screen/$selectedTipo/$selectedLocal")
+                    Log.d("MAKITA" , "variables enviadas segunda $selectedTipo - $selectedLocal - $usuarioAsignado")
+                    navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioAsignado")
                 }
 
-
-               // navController.navigate("second_screen/$selectedTipo/$selectedLocal")
             },
                 enabled = selectedOption.isNotEmpty()  && selectedTipo.isNotEmpty() && selectedLocal.isNotEmpty(), // Habilita el botón solo si todos los campos están llenos,
                 colors = ButtonDefaults.buttonColors(
@@ -356,8 +356,6 @@ fun MainScreen(navController: NavController) {
 
             }
 
-
-
             // Mensaje de error si no se selecciona una opción
             if (showError && selectedOption.isEmpty() && selectedTipo.isEmpty() && selectedLocal.isEmpty())
             {
@@ -374,6 +372,69 @@ fun MainScreen(navController: NavController) {
 
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UsuarioAsignadoScreen(
+    context: Context,
+    onUsuarioAsignadoChange: (String) -> Unit // Callback para enviar el usuario al padre
+) {
+
+    val apiService = RetrofitClient.apiService
+    var usuarioAsignado  by remember { mutableStateOf("") } // Estado global
+    val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+
+    LaunchedEffect(Unit) {
+        try {
+            Log.d("*MAKITA*", "Iniciando petición a la API...")
+
+            val respuesta01 = withContext(Dispatchers.IO) {
+                Log.d("*MAKITA*", "Llamando a API con: gnombreDispositivo=$gnombreDispositivo, mes = 02, periodo=2025")
+                apiService.obtenerUsuario(gnombreDispositivo, "02", "2025")
+            }
+
+            usuarioAsignado  = respuesta01.data.Usuario
+            onUsuarioAsignadoChange(usuarioAsignado)
+
+            Log.d("*MAKITA*", "Usuario obtenido exitosamente: $usuarioAsignado ")
+
+        } catch (e: IOException) {
+            Log.e("*MAKITA*", "Error de red: No hay conexión a Internet", e)
+            mostrarDialogo(context, "Error", "Error de red: No hay conexión a Internet")
+
+        } catch (e: Exception) {
+            Log.e("*MAKITA*", "Error al obtener el usuario", e)
+            mostrarDialogo(context, "ErrorAPI", "Error al obtener el usuario: ${e.message}")
+        }
+    }
+
+
+    TextField(
+        value = usuarioAsignado ,
+        onValueChange = { /* No se permite la edición */ },
+        label = { Text("Usuario Asignado a Capturador") },
+        readOnly = true, // Este campo es solo de lectura
+        modifier = Modifier
+            .width(320.dp) // Definir ancho
+            .height(60.dp),
+        textStyle = TextStyle(
+            fontSize = 18.sp, // Tamaño del texto
+            color = Color.Red, // Color del texto
+            fontFamily = FontFamily.Serif, // Familia de fuentes
+            fontWeight = FontWeight.Bold, // Peso de la fuente
+            textAlign = TextAlign.Center
+        ),
+        enabled = false,
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            containerColor = Color.White,
+            disabledTextColor = Color.Black,  // Texto negro cuando está deshabilitado
+            disabledLabelColor = Color.Gray,   // Etiqueta gris cuando está deshabilitado
+            disabledBorderColor = Color.Black  // Borde negro cuando está deshabilitado
+        )
+
+    )
+
 }
 
 fun formatTimestamp(timestamp: Long): String {
@@ -446,8 +507,6 @@ fun DatePickerWithTextField() {
     )
 }
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComboBoxWithTextField(
@@ -518,7 +577,6 @@ fun ComboBoxWithTextField(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComboBoxTipoProducto(
@@ -564,10 +622,6 @@ fun ComboBoxTipoProducto(
         }
     }
 }
-
-
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -617,35 +671,21 @@ fun ComboBoxLocal(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SecondScreen(navController: NavController, param: String, param2: String)
+fun SecondScreen(navController: NavController, param: String, param2: String , usuarioAsignado: String)
 
 {
     val ubicacionFocusRequester = remember { FocusRequester() }
-    val referenciaFocusRequester = remember { FocusRequester() }
+
     val cantidadFocusRequester = remember { FocusRequester() }
     val itemFocusRequester = remember { FocusRequester() }
-
-    val focusManager = LocalFocusManager.current
     var text by remember { mutableStateOf("") }
-    //var response by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
+
     var extractedText by remember { mutableStateOf("") }
     var extractedText2 by remember { mutableStateOf("") }
     var extractedText3 by remember { mutableStateOf("") }
     var extractedText4 by remember { mutableStateOf("") }
-
-
-    val codigo1 = remember { mutableStateOf("") }
-    val codigo2 = remember { mutableStateOf("") }
-    val codigo3 = remember { mutableStateOf("") }
-
-    val context = LocalContext.current
     var response by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
-    var response3 by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
-
-
     var errorState by rememberSaveable { mutableStateOf<String?>(null) }
-    var errorMessage by remember { mutableStateOf("") }
-    var showDialog by remember { mutableStateOf(false) }
     var textFieldValue2 by remember { mutableStateOf("") }
     var showErrorDialog by remember { mutableStateOf(false) }
     var ubicacion by remember { mutableStateOf("") }
@@ -656,31 +696,14 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal    by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
-
     var ultimaubicacion by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        // color = MaterialTheme.colorScheme.background
-    ) {
-
-        //LaunchedEffect(Unit) {
-        //    ubicacionFocusRequester.requestFocus()
-       // }
-
+    Surface(modifier = Modifier.fillMaxSize())
+    {
         gTipoItem = param ?: gTipoItem
         gLocal = param2 ?: gLocal
         textFieldValue2 = "" // Descripcion
-
-        val context = LocalContext.current
-        val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
-
-
-        //ANTES
-        //gTipoItem  = param.toString();
-        //gLocal     = param2.toString();
-
-
 
         Column(
             modifier = Modifier
@@ -690,20 +713,13 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
             verticalArrangement = Arrangement.Center
         ) {
 
-            ///ACAACA
-
-            val context = LocalContext.current
             val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
             val nombreDispositivo = gnombreDispositivo
 
             val subtitulo = "$gLocal $gnombreDispositivo"
 
-            //Titulo()
-            // Titulo2(param = gTipoItem, param2 = gLocal)
             Titulo2(param = gTipoItem, param2 =subtitulo)
-            //  NombreDispositivo()
             Separar()
-
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -747,38 +763,6 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 
             )
             Spacer(modifier = Modifier.height(10.dp))
-
-
-            // LaunchedEffect(Unit) {
-           //     val nombresCapturadores = obtenerNombreDelCapturador()
-           //     if (nombresCapturadores.isNotEmpty()) {
-           //         nombreCapturador = nombresCapturadores.joinToString(", ") // Mostrar todos los nombres concatenados
-           //     } else {
-           //         nombreCapturador = "No se encontraron dispositivos"
-           //     }
-           // }
-
-
-
-            //TextField(
-            //    value = nombreDispositivo,
-            //    onValueChange = { /* No se permite la edición */ },
-            //   // label = { Text("00 - 20") },
-            //    readOnly = true, // Este campo es solo de lectura
-            //    modifier = Modifier
-            //        .width(300.dp) // Definir ancho
-            //        .height(50.dp),
-            //    textStyle = TextStyle(
-            //        fontSize   = 12.sp, // Tamaño del texto
-            //        color      = Color.Red, // Color del texto
-            //        fontFamily = FontFamily.Serif, // Familia de fuentes
-            //        fontWeight = FontWeight.Bold // Peso de la fuente
-            //    ),
-            //    enabled = false
-            //)
-
-
-
             OutlinedTextField(
                 value = ubicacion,
                 onValueChange = {
@@ -1125,23 +1109,10 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                     Button(
                         onClick = {
                             if (extractedText.isNotEmpty()) {
-
-
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
-
-                                        // AQUI VALIDAR ANTES DE GRABAR c//
-                                        ///val isUbicacionValida = ValidarUbicacionProducto(extractedText2.trim())
-
                                         var FechaFija = formatoFechaSS(System.currentTimeMillis())
-
-                                        //Log.e("*MAKITA*ACA*0*", "ValidaFechaFija : ${FechaFija}")
-                                        //Log.e("*MAKITA*ACA*1*", "ValidaFechaFija : ${extractedText.trim()}")
-                                        //Log.e("*MAKITA*ACA*2*", "ValidaFechaFija : ${extractedText2.trim()}")
-
-                                        //AQUI VALIDO UBICACION BMB
                                         val Usuario = gnombreDispositivo
-
                                         try{
 
                                             val response33 = apiService.validarUbicacionProducto(
@@ -1151,14 +1122,12 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                                                 Usuario
                                             )
 
-                                            Log.d("*MAKITA*ACA*4*", "API validarUbicacionProducto: ${response33}")
+                                            Log.d("*MAKITA*", "ms validarUbicacionProducto: ${response33}")
 
                                             if (!response33.isNullOrEmpty()) {
                                                 // No es error , no se encuentra definido en tabla HerramientasCargador
-                                                Log.d("*MAKITA*AQUI*", "API es nulovalidarUbicacionProducto: ${response33}")
+                                                Log.d("*MAKITA", "API validarUbicacionProducto Null o Vacio: ${response33}")
                                                 errorState = " No se encontraron datos para el item proporcionado"
-
-
 
                                                 if (response33 == "NO")
                                                 {
@@ -1174,7 +1143,7 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                                                             Item =  extractedText.trim(),
                                                             Cantidad = cantidad,
                                                             Estado = "Ingresado",
-                                                            Usuario = gnombreDispositivo,
+                                                            Usuario = usuarioAsignado,
                                                             NombreDispositivo = nombreDispositivo
                                                         )
 
@@ -1197,10 +1166,8 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                                                         "Error",
                                                         linea
                                                     )
-
-                                                    //Toast.makeText(context, "Item ya inventariado fecha-item-ubicacion", Toast.LENGTH_LONG).show()
-
                                                     Log.d("*MAKITA*ACA*44*", "API SI: ${response33}")
+
                                                     text = ""
                                                     ubicacion = ""
                                                     extractedText = ""
@@ -1303,11 +1270,6 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 
                     }
 
-
-
-
-
-
                     Button(
                         onClick = {
                             text = ""
@@ -1335,11 +1297,6 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                             fontSize = 16.sp,
                             modifier = Modifier.padding(top = 8.dp)
                         )
-
-
-
-
-
                     }
                 }
             }
@@ -1347,8 +1304,6 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
         }
     }
 }
-
-
 
 fun obtenerNombreDelDispositivo(): String {
     val fabricante = Build.MANUFACTURER // Ejemplo: "Honeywell"
@@ -1361,17 +1316,13 @@ fun obtenerNombreDelDispositivo(context: Context): String {
     return Settings.Global.getString(context.contentResolver, Settings.Global.DEVICE_NAME) ?: "Desconocido"
 }
 
-
 fun mostrarDialogo(context: Context, titulo: String, mensaje: String)
 {
-
-
     val builder = AlertDialog.Builder(context)
     builder.setTitle(titulo)
     builder.setMessage(mensaje)
     builder.setPositiveButton("OK", null)
     builder.show()
-
 }
 
 fun mostrarDialogo3(context: Context, titulo: String, mensaje: String) {
@@ -1387,9 +1338,6 @@ fun mostrarDialogo3(context: Context, titulo: String, mensaje: String) {
 
 fun mostrarDialogo2(context: Context, titulo: String, mensaje: String) {
     val builder = AlertDialog.Builder(context)
-
-
-
     builder.setTitle(titulo)
         .setMessage(mensaje)
         .setPositiveButton("Aceptar") { dialog, _ ->
@@ -1405,10 +1353,9 @@ fun isNetworkAvailable(context: Context): Boolean {
     return networkInfo != null && networkInfo.isConnected
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TerceraScreen(navController: NavController, param: String, param2: String)
+fun TerceraScreen(navController: NavController, param: String, param2: String , usuarioAsignado: String)
 
 {
     val ubicacionFocusRequester = remember { FocusRequester() }
@@ -1964,7 +1911,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
                                                             Item =  extractedText.trim(),
                                                             Cantidad = cantidad,
                                                             Estado = "Ingresado",
-                                                            Usuario = gnombreDispositivo,
+                                                            Usuario = usuarioAsignado,
                                                             NombreDispositivo = gnombreDispositivo
                                                         )
 
@@ -2126,8 +2073,6 @@ fun Separar(){
     )
 }
 
-
-
 @Composable
 fun Titulo2(param: String?, param2: String?)
 {
@@ -2148,51 +2093,27 @@ fun Titulo2(param: String?, param2: String?)
     }
 }
 
-
 fun guardarRespaldo(context: Context, registro: RegistraInventarioRequest) {
-    // Ruta del archivo
+    // Ruta del archivo CSV en el directorio de la aplicación
     val archivo = File(context.filesDir, "inventario.csv")
 
-    Log.d(
-        "*MAKITA*",
-        "directorio $archivo"
-    )
+    Log.d("*MAKITA*", "directorio $archivo")
+    Log.d("*MAKITA*", "directorio de datos ${context.filesDir}")
 
-    Log.d(
-        "*MAKITA*",
-        "directorio de datos $context.filesDir"
-    )
-
-    // Verificar si el archivo existe, si no, escribir el encabezado
+    // Verificar si el archivo existe, si no, crear el archivo con los encabezados
     if (!archivo.exists()) {
+        // Escribir el encabezado solo si el archivo no existe
         val encabezado = "Id;Empresa;FechaInventario;TipoInventario;Bodega;Clasif1;Ubicacion;Item;Cantidad;Estado;Usuario;NombreDispositivo\n"
         archivo.writeText(encabezado) // Escribir encabezado en el archivo
     }
 
-    // Construir contenido del archivo
-    val contenido = """
-        ${registro.Id};
-        ${registro.Empresa};
-        ${registro.FechaInventario};
-        ${registro.TipoInventario};
-        ${registro.Bodega};
-        ${registro.Clasif1};
-        ${registro.Ubicacion};
-        ${registro.Item};
-        ${registro.Cantidad};
-        ${registro.Estado};
-        ${registro.Usuario};
-        ${registro.NombreDispositivo}
-    """.trimIndent()
+    // Construir el contenido del archivo, cada valor separado por punto y coma
+    val contenido = "${registro.Id};${registro.Empresa};${registro.FechaInventario};${registro.TipoInventario};${registro.Bodega};${registro.Clasif1};${registro.Ubicacion};${registro.Item};${registro.Cantidad};${registro.Estado};${registro.Usuario};${registro.NombreDispositivo}"
 
-    Log.d(
-        "*MAKITA*",
-        "guardarRespaldo $contenido"
-    )
-
+    Log.d("*MAKITA*", "guardarRespaldo: $contenido")
 
     try {
-        // Escribir los datos en el archivo, añadiendo una nueva línea
+        // Escribir los datos en el archivo CSV, añadiendo una nueva línea
         archivo.appendText(contenido + "\n")
         Toast.makeText(context, "Datos guardados exitosamente en formato CSV", Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
@@ -2200,6 +2121,12 @@ fun guardarRespaldo(context: Context, registro: RegistraInventarioRequest) {
         Toast.makeText(context, "Error al guardar los datos: ${e.message}", Toast.LENGTH_SHORT).show()
         e.printStackTrace()
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewMainScreen() {
+    MainScreen(navController = rememberNavController())
 }
 
 

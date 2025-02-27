@@ -54,6 +54,22 @@ data class UltimaResponse(
 data class InventariadoResponse(
     var respuesta: String
 )
+
+data class ResponseUsuario(
+    val status: Int,
+    val data: UsuarioResponse
+)
+
+data class UsuarioResponse(
+    val Empresa: String,
+    val Usuario : String,
+    val Capturador :  String,
+    val Periodo : String,
+    val Mes : String,
+    val Fecha : String,
+    val tipoProducto : String
+)
+
 interface ApiService
 {
 
@@ -94,17 +110,11 @@ interface ApiService
     ):  String
 
 
-
-
-    // @GET("api/generar-etiquetaC/{item}")
-   // suspend fun obtenerHerramienta(@Path("item") item: String) : List<ItemResponse>
-
-    //@GET("api/generar-etiquetaC/{item}")
-    //suspend fun obtenerHerramienta(@Path("item") item: String) : List<ItemResponse>
-
-   // @GET("api/obtener-ubicacion/{ubicacion}")
-   // suspend fun obtenerUbicacion(@Path("ubicacion") ubicacion: String) : List<UbicacionResponse>
-
-
+    @GET("api/consultar-asignacion-filtro/{capturador}/{mes}/{periodo}")
+    suspend fun obtenerUsuario(
+        @Path("capturador") capturador: String
+        ,@Path("mes") mes: String
+        ,@Path("periodo") periodo: String
+    ) : ResponseUsuario
 
 }
