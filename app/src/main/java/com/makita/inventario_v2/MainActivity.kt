@@ -104,6 +104,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import java.io.IOException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 
 class MainActivity : ComponentActivity()
@@ -379,29 +381,35 @@ fun UsuarioAsignadoScreen(
     var usuarioAsignado  by remember { mutableStateOf("") } // Estado global
     val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
 
-    LaunchedEffect(Unit) {
-        try {
-            Log.d("*MAKITA*", "Iniciando petición a la API...")
 
-            val respuesta01 = withContext(Dispatchers.IO) {
-                Log.d("*MAKITA*", "Llamando a API con: gnombreDispositivo=$gnombreDispositivo, mes = 02, periodo=2025")
-                apiService.obtenerUsuario(gnombreDispositivo, "02", "2025")
+            LaunchedEffect(Unit) {
+                try {
+                    val fechaActual = LocalDate.now()
+                    val mes = fechaActual.format(DateTimeFormatter.ofPattern("MM")) // Obtiene el mes actual con dos dígitos
+                    val periodo = fechaActual.year.toString() // Obtiene el año actual
+
+                    Log.d("*MAKITA*", "Iniciando petición a la API...")
+
+                    val respuesta01 = withContext(Dispatchers.IO) {
+                        Log.d("*MAKITA*", "Llamando a API con: gnombreDispositivo=$gnombreDispositivo, mes=$mes, periodo=$periodo")
+                        apiService.obtenerUsuario(gnombreDispositivo, mes, periodo)
+                    }
+
+                    usuarioAsignado = respuesta01.data.Usuario
+                    onUsuarioAsignadoChange(usuarioAsignado)
+
+                    Log.d("*MAKITA*", "Usuario obtenido exitosamente: $usuarioAsignado ")
+
+                } catch (e: IOException) {
+                    Log.e("*MAKITA*", "Error de red: No hay conexión a Internet", e)
+                    mostrarDialogo(context, "Error", "Error de red: No hay conexión a Internet")
+
+                } catch (e: Exception) {
+                    Log.e("*MAKITA*", "Error al obtener el usuario", e)
+                    mostrarDialogo(context, "ErrorAPI", "Error al obtener el usuario: ${e.message}")
+                }
             }
 
-            usuarioAsignado  = respuesta01.data.Usuario
-            onUsuarioAsignadoChange(usuarioAsignado)
-
-            Log.d("*MAKITA*", "Usuario obtenido exitosamente: $usuarioAsignado ")
-
-        } catch (e: IOException) {
-            Log.e("*MAKITA*", "Error de red: No hay conexión a Internet", e)
-            mostrarDialogo(context, "Error", "Error de red: No hay conexión a Internet")
-
-        } catch (e: Exception) {
-            Log.e("*MAKITA*", "Error al obtener el usuario", e)
-            mostrarDialogo(context, "ErrorAPI", "Error al obtener el usuario: ${e.message}")
-        }
-    }
 
 
     TextField(
