@@ -6,9 +6,9 @@ import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.http.HttpException
-import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.DatePicker
 import android.widget.Toast
@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -72,7 +71,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.ContentScale
+
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -102,7 +101,40 @@ import java.util.Locale
 import java.util.TimeZone
 import java.io.File
 import android.provider.Settings
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Send
+
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import com.makita.inventario_v2.RetrofitClient.apiService
 import java.io.IOException
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 
 class MainActivity : ComponentActivity()
@@ -123,7 +155,6 @@ fun CambiarColorBarraEstado(color: Color, darkIcons: Boolean = true) {
     val view = LocalView.current
 
     val composeColor = androidx.compose.ui.graphics.Color(0xFF00909E)
-
 
     val argbColor = android.graphics.Color.argb(
         (composeColor.alpha * 255).toInt(),
@@ -170,8 +201,9 @@ fun AppNavigation() {
             //val param2 = backStackEntry.arguments?.getString("param2") ?: ""
             val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
+            val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
 
-            SecondScreen(navController = navController, param = param, param2 = param2)
+            SecondScreen(navController = navController, param = param, param2 = param2,  param3 = param3)
 
 
         }
@@ -193,9 +225,34 @@ fun AppNavigation() {
                 TerceraScreen(navController = navController, param = param, param2 = param2)
 
 
+        }
+
+
+        composable(
+            route = "cuarta_screen/{param}/{param2}/{param3}/{param4}/{param5}",
+            arguments = listOf(
+                navArgument("param") { type = NavType.StringType },
+                navArgument("param2") { type = NavType.StringType },
+                navArgument("param3") { type = NavType.StringType },
+                navArgument("param4") { type = NavType.StringType },
+                navArgument("param5") { type = NavType.StringType }
+
+            )
+        ) { backStackEntry ->
+
+            val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
+            val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
+            val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
+            val param4 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam4"
+            val param5 = backStackEntry.arguments?.getString("param5") ?: "DefaultParam5"
+
+
+            CuartaScreen(navController = navController, param = param, param2 = param2, param3 = param3,param4 = param4 ,param5 = param5  )
 
 
         }
+
+
 
     }
 
@@ -207,7 +264,7 @@ fun AppNavigation() {
 @Composable
 fun MainScreen(navController: NavController) {
 
-    var selectedDate by remember { mutableStateOf("") }
+
     val calendar = Calendar.getInstance()
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
@@ -219,20 +276,33 @@ fun MainScreen(navController: NavController) {
     var selectedOption by remember { mutableStateOf("") } // Estado global
     var selectedTipo   by remember { mutableStateOf("") } // Estado global
     var selectedLocal  by remember { mutableStateOf("") } // Estado global
+    var selectedBodega  by remember { mutableStateOf("") }
+
     val timestamp = formatTimestamp(System.currentTimeMillis())
     var showError by remember { mutableStateOf(false) }
    // val context = LocalContext.current
     val activity = context as? Activity
+    var usuarioasigando by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf("$day/${month + 1}/$year") }
 
 
     // Configuración del DatePickerDialog
     val datePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-            selectedDate = "$dayOfMonth/${month + 1}/$year"
+            val monthFormatted = String.format("%02d", month + 1)  // Asegura dos dígitos en el mes
+            val dayFormatted = String.format("%02d", dayOfMonth)  // Asegura dos dígitos en el día
+            selectedDate = "$dayFormatted/$monthFormatted/$year"
         },
         year, month, day
     )
+
+    val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+
+    Log.d("*MAKITA*", "Usuario obtener: $gnombreDispositivo")
+
+    val anioActual = LocalDate.now().year
+    val mesActual  =  String.format("%02d", LocalDate.now().monthValue )
 
 
     CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
@@ -241,95 +311,211 @@ fun MainScreen(navController: NavController) {
         //  color = MaterialTheme.colorScheme.background, // Fondo primario
         // contentColor = Color.White, // Color del contenido
         shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.padding(16.dp) // Espaciado alrededor
+        modifier = Modifier.padding(8.dp) // Espaciado alrededor
 
     )
 
 
     {
+
+        val scrollState = rememberScrollState()
+
         Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize()
+                .verticalScroll(scrollState)
+                .fillMaxHeight(1f)
+            ,
+            horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top
 
         ) {
 
             Image(
-                painter = painterResource(id = R.drawable.makitafondoblanco),
-                contentDescription = "Logo",
-                modifier = Modifier.size(120.dp),
-                contentScale = ContentScale.Fit
-            )
+                painter = painterResource(id = R.drawable.makitarojosmall),
+                contentDescription = "Makita Letra Rojo Tamaño Small",
+                modifier = Modifier
+                    .size(110.dp) // Aumentar tamaño del logo
+                    .align(Alignment.Start) // Alineación hacia la izquierda
+                    .padding(top = 0.dp)
 
+              //  contentScale = ContentScale.Fit
+            )
+/*
             Text(
-                text = "APP Inventario, Registre parametros: ",
-                fontSize = 17.sp,
+                text = "Ingrese los parametros: ",
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
-            DatePickerWithTextField()
+ */
 
-            Spacer(modifier = Modifier.height(16.dp))
+
+                DatePickerWithTextField(selectedDate, { date -> selectedDate = date })
+
+
+
+
+                LaunchedEffect(Unit) {
+                    try {
+
+
+                        val respuesta01 = withContext(Dispatchers.IO) {
+                           // var gnombreDispositivo = "Honeywell-30"
+                            apiService.obtenerUsuario(gnombreDispositivo, "03", "2025")
+                        }
+
+                        usuarioasigando = respuesta01.data.Usuario
+                        Log.d("*MAKITA*", "Usuario obtenido: $usuarioasigando")
+
+                    }
+                    catch (e: IOException) {
+                        //Log.e("ErrorAPI", "Error de red: No hay conexión a Internet", e)
+
+                        mostrarDialogo(context, "Error", "Error de red: No hay conexión a Internet")
+
+                    }
+                    catch (e: Exception) {
+                        mostrarDialogo(context, "ErrorAPI", "Error al obtener el usuario: ${e.message}")
+                       // Log.e("ErrorAPI", "Error al obtener el usuario: ${e.message}", e)
+                    }
+
+                }
+
+
+            TextField(
+                value = usuarioasigando.uppercase(),
+                onValueChange = { /* No se permite la edición */ },
+                label = { Text("Usuario Asignado a Capturador") },
+                readOnly = true, // Este campo es solo de lectura
+                modifier = Modifier
+                    .width(320.dp) // Definir ancho
+                    .height(60.dp),
+                textStyle = TextStyle(
+                    fontSize = 20.sp, // Tamaño del texto
+                    color = Color.Red, // Color del texto
+                    fontFamily = FontFamily.Serif, // Familia de fuentes
+                    fontWeight = FontWeight.Bold, // Peso de la fuente
+                    textAlign = TextAlign.Center
+                ),
+                enabled = false,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    containerColor = Color.White,
+                    disabledTextColor = Color.Black,  // Texto negro cuando está deshabilitado
+                    disabledLabelColor = Color.Gray,   // Etiqueta gris cuando está deshabilitado
+                    disabledBorderColor = Color.Black  // Borde negro cuando está deshabilitado
+                )
+
+            )
+
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             ComboBoxWithTextField(selectedOption = selectedOption,
                 onOptionSelected = { selectedOption = it }
 
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             ComboBoxTipoProducto(
                 selectedOption = selectedTipo,
                 onOptionSelected = { selectedTipo = it }
             )
 
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             ComboBoxLocal(
                 selectedOption = selectedLocal,
                 onOptionSelected = { selectedLocal = it }
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
 
-            Log.d("*MAKITA*", "Opcion seleccionada $selectedOption")
+            Spacer(modifier = Modifier.height(10.dp))
+
+
+            ComboBoxGrupoBodega(
+                selectedOption = selectedBodega,
+                onOptionSelected = {  selectedBodega = it }
+                ,local = selectedLocal.take(2)
+            )
+
+
+            Spacer(modifier = Modifier.height(10.dp))
+
 
             Button(onClick =
             {
                 if (selectedOption.isEmpty()) {
                     showError = true // Muestra el error si no hay selección
-                    Toast.makeText(context, "Campo Obligatorio, debe ingresar Tipo de Inventario", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        "Campo Obligatorio, debe ingresar Tipo de Inventario",
+                        Toast.LENGTH_LONG
+                    ).show()
                 } else {
                     showError = false
                     // Acción adicional si la selección es válida
                     println("Opción seleccionada: $selectedOption")
                 }
 
+                //AQUI
 
-                if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS")
-                { // Reemplaza "specific_option" con la opción deseada
-                    navController.navigate("third_screen/$selectedTipo/$selectedLocal")
+                if (usuarioasigando.isEmpty()) {
+                    showError = true // Muestra el error si no hay selección
+                    Toast.makeText(
+                        context,
+                        "Usuario No Asociado a capturador, solicite al Administracion su Asignacion",
+                        Toast.LENGTH_LONG
+                    ).show()
                 } else {
-                    navController.navigate("second_screen/$selectedTipo/$selectedLocal")
+                    showError = false
+
                 }
 
 
+
+                if (selectedOption == "INVENTARIO")
+                {
+                    if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") { // Reemplaza "specific_option" con la opción deseada
+                        navController.navigate("third_screen/$selectedTipo/$selectedLocal")
+                    } else {
+                        navController.navigate("second_screen/$selectedTipo/$selectedLocal")
+                    }
+                }
+                else
+                {
+
+                    if (selectedOption == "RECONTEO")
+                    {
+
+                        Log.d("*MAKITA*ACA*", "Pasa por fechaFormateada1: $selectedDate")
+                        val fechaFormateada = formatearFecha(selectedDate)
+                        Log.d("*MAKITA*ACA*", "Pasa por fechaFormateada2: $fechaFormateada")
+                        val fechaCodificada = URLEncoder.encode(fechaFormateada, StandardCharsets.UTF_8.toString())
+                        Log.d("*MAKITA*ACA*", "Pasa por fechaFormateada3: $fechaCodificada")
+                        navController.navigate("cuarta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
+
+                    }
+                }
+
                // navController.navigate("second_screen/$selectedTipo/$selectedLocal")
             },
-                enabled = selectedOption.isNotEmpty()  && selectedTipo.isNotEmpty() && selectedLocal.isNotEmpty(), // Habilita el botón solo si todos los campos están llenos,
+                enabled = selectedOption.isNotEmpty()  && selectedTipo.isNotEmpty() && selectedLocal.isNotEmpty() && usuarioasigando.isNotEmpty() && selectedBodega.isNotEmpty() && selectedBodega.isNotEmpty() && selectedDate.isNotEmpty(), // Habilita el botón solo si todos los campos están llenos,
                 colors = ButtonDefaults.buttonColors(
                     containerColor =  Color(0xFF00909E),
                     contentColor = Color.White),
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .height(60.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .width(300.dp)
+                    .height(45.dp)
+                ,shape = RoundedCornerShape(8.dp),
             )
             {
 
-                Text(text = " Inventario $selectedTipo",
+                Text(text = " TIPO ${selectedOption.uppercase()} ${selectedTipo.uppercase()}",
                     color = Color.White,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     modifier = Modifier.padding(top = 8.dp))
             }
 
@@ -343,7 +529,7 @@ fun MainScreen(navController: NavController) {
                 ),
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .width(90.dp)
+                    .width(300.dp)
                     .height(45.dp)
                 ,shape = RoundedCornerShape(8.dp),
             ) {
@@ -359,7 +545,7 @@ fun MainScreen(navController: NavController) {
 
 
             // Mensaje de error si no se selecciona una opción
-            if (showError && selectedOption.isEmpty() && selectedTipo.isEmpty() && selectedLocal.isEmpty())
+            if (showError && selectedOption.isEmpty() && selectedTipo.isEmpty() && selectedLocal.isEmpty() && selectedBodega.isEmpty())
             {
                 Text(
                     text = "Este campo es obligatorio",
@@ -367,13 +553,34 @@ fun MainScreen(navController: NavController) {
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                 )
-                mostrarDialogo(context, "Error", "Seleccione los campos obligatorios Tipo,TipoItem,Local")
+                mostrarDialogo(context, "Error", "Seleccione los campos obligatorios Tipo,TipoItem,Local,Bodega")
             }
-
-
 
         }
     }
+}
+
+
+
+fun formatearFecha(selectedDate: String): String {
+    //return try {
+     //   val inputFormatter = DateTimeFormatter.ofPattern("yyyy-M-dd") // Acepta meses con 1 o 2 dígitos
+     //   val parsedDate = LocalDate.parse(selectedDate, inputFormatter)
+      //  val outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd") // Formato con mes de 2 dígitos
+      //  parsedDate.format(outputFormatter)
+   // } catch (e: DateTimeParseException) {
+     //   "0000-00-00" // Devuelve una fecha inválida en caso de error
+   // }
+
+    return try {
+        val inputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        val outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd") // Formato deseado
+        val date = LocalDate.parse(selectedDate, inputFormatter)
+        date.format(outputFormatter)
+    } catch (e: Exception) {
+        "0000-00-00"
+    }
+
 }
 
 fun formatTimestamp(timestamp: Long): String {
@@ -394,55 +601,54 @@ fun formatoFechaSinSS(timestamp: Long): String {
     return dateFormat.format(Date(timestamp))
 }
 
+fun formatoFechaReconteo(timestamp: Long): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    return dateFormat.format(Date(timestamp))
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DatePickerWithTextField() {
-
+fun DatePickerWithTextField(selectedDate: String, onDateSelected: (String) -> Unit) {
     var showDatePickerDialog by remember { mutableStateOf(false) }
-
-    // Obtener la fecha actual
+    val context = LocalContext.current
     val calendar = Calendar.getInstance()
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
-    var selectedDate by remember { mutableStateOf("$day/${month + 1}/$year") }
-
-    val context = LocalContext.current
-
-    // Crear el DatePickerDialog
-   // val datePickerDialog = remember {
-     //   DatePickerDialog(
-      //      context,
-       //     { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-        //        selectedDate = "$selectedDayOfMonth/${selectedMonth + 1}/$selectedYear"
-        //    },
-        //    year, month, day
-       // )
-   // }
+    var selectedDate2 by remember { mutableStateOf(String.format("%02d/%02d/%d", day, month + 1, year)) }
 
 
-    selectedDate = formatoFechaSinSS(System.currentTimeMillis())
+    val datePickerDialog = remember {
+        DatePickerDialog(
+            context,
+            { _, selectedYear, selectedMonth, selectedDayOfMonth ->
+                val monthFormatted = String.format("%02d", selectedMonth + 1) // Asegura dos dígitos en el mes
+                val dayFormatted = String.format("%02d", selectedDayOfMonth)  // Asegura dos dígitos en el día
+                selectedDate2 = "$dayFormatted/$monthFormatted/$selectedYear"
+                onDateSelected(selectedDate2)
+            },
+            year, month, day
+        )
+    }
 
-    // UI del TextField
     OutlinedTextField(
-        value = selectedDate,
+        value = selectedDate2,
         onValueChange = {},
         modifier = Modifier
-            .width(320.dp) // Ancho fijo
-            .height(60.dp) // Alto fijo
+            .width(320.dp)
+            .height(60.dp)
             .clickable {
-                // Muestra el DatePickerDialog al hacer clic
-                DatePickerDialog(
-                    context,
-                    { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-                        // Actualiza la fecha seleccionada
-                        selectedDate = "$selectedDayOfMonth/${selectedMonth + 1}/$selectedYear"
-                    },
-                    year, month, day // Fecha inicial en el DatePicker
-                ).show()
+                datePickerDialog.show()
             },
         readOnly = true,
-        label = { Text("Ingrese Fecha Inventario") }
+        label = { Text("Ingrese Fecha Inventario") },
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.CalendarToday,
+                contentDescription = "Calendario"
+            )
+        }
     )
 }
 
@@ -588,7 +794,7 @@ fun ComboBoxLocal(
                 .height(60.dp)
                 .clickable { expanded = true },
             readOnly = true,
-            label = { Text("Seleccione Bodega") },
+            label = { Text("Seleccione Local") },
             trailingIcon = {
                 Icon(
                     imageVector = if (expanded) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
@@ -615,9 +821,97 @@ fun ComboBoxLocal(
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SecondScreen(navController: NavController, param: String, param2: String)
+fun ComboBoxGrupoBodega(
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit,
+    local: String
+)
+{
+    var expanded by remember { mutableStateOf(false) }
+    var opciones by remember { mutableStateOf<List<GrupoBodegaResponse>>(emptyList()) }
+    val context = LocalContext.current
+
+    Log.d("*MAKITA*111*", "Pasa1 por ComboBoxGrupoBodega: $local")
+
+    LaunchedEffect(local) {
+
+        Log.d("*MAKITA*111*", "Pasa111 por API ComboBoxGrupoBodega: $local")
+        //val localValue = if (local.isNullOrEmpty()) "01" else local
+        val localValue = if (local.isNullOrEmpty()) "01" else local
+
+        Log.d("*MAKITA*111*", "Pasa111 API VACIO por ComboBoxGrupoBodega: $localValue")
+
+        try
+        {
+
+            val respuesta22 = apiService.obtenerGrupoBodega("MAKITA", localValue.trim())
+
+            if (respuesta22.isNotEmpty()) {
+                opciones = respuesta22
+                Log.d("*MAKITA*", "Grupos obtenidos: $respuesta22")
+            }
+
+        }
+
+        catch (e: Exception)
+        {
+           // Log.e("MAKITA", "Error al obtener grupo ", e)
+
+            val linea = "Debe Seleccionar local y Grupo " + e.message
+            mostrarDialogo2(
+                context,
+                "Error",
+                linea
+            )
+
+        }
+
+
+    }
+
+    Box {
+        OutlinedTextField(
+            value = selectedOption,
+            onValueChange = {},
+            modifier = Modifier
+                .width(320.dp)
+                .height(60.dp)
+                .clickable { expanded = true },
+            readOnly = true,
+            label = { Text("Seleccione Grupo de Bodega o Codigo Bodega") },
+            trailingIcon = {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
+                    contentDescription = null,
+                    modifier = Modifier.clickable { expanded = !expanded }
+                )
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            opciones.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.NombreGrupoBodega) }, // Reemplaza 'nombre' con la propiedad correcta
+                    onClick = {
+                        onOptionSelected(option.GrupoBodega) // Pasar solo el string correcto
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SecondScreen(navController: NavController, param: String, param2: String,param3: String)
 
 {
     val ubicacionFocusRequester = remember { FocusRequester() }
@@ -655,9 +949,12 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal    by remember { mutableStateOf("") }
+    var gusuarioasigando  by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
     var ultimaubicacion by remember { mutableStateOf("") }
+
+
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -670,6 +967,8 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 
         gTipoItem = param ?: gTipoItem
         gLocal = param2 ?: gLocal
+        gusuarioasigando  = param3 ?: gusuarioasigando
+
         textFieldValue2 = "" // Descripcion
 
         val context = LocalContext.current
@@ -690,7 +989,7 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
             verticalArrangement = Arrangement.Center
         ) {
 
-            ///ACAACA
+
 
             val context = LocalContext.current
             val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
@@ -914,8 +1213,8 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        val response35 = apiService.validarTipoItem(extractedText.trim(), gTipoItem)
 
+                        val response35 = apiService.validarTipoItem(extractedText.trim(), gTipoItem)
                         withContext(Dispatchers.Main) {
                             if (response35 == "NO") {
                                 Log.d("*MAKITA*AQUI*", "RESPUESTA NO - ENTRA validarTipoItem: $response35")
@@ -947,7 +1246,7 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                         textFieldValue2 = ""
 
                         val apiResponse = apiService.obtenerUbicacionItem(extractedText)
-                        Log.d("*MAKITA*", "Respuesta obtenerUbicacionItem: $extractedText")
+                        //Log.d("*MAKITA*", "Respuesta obtenerUbicacionItem: $extractedText")
 
                         withContext(Dispatchers.Main) {
                             if (apiResponse.isNullOrEmpty()) {
@@ -1174,7 +1473,7 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
                                                             Item =  extractedText.trim(),
                                                             Cantidad = cantidad,
                                                             Estado = "Ingresado",
-                                                            Usuario = gnombreDispositivo,
+                                                            Usuario = gusuarioasigando,
                                                             NombreDispositivo = nombreDispositivo
                                                         )
 
@@ -1183,7 +1482,7 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 
                                                     var successMessage = "Ubicación actualizada exitosamente"
 
-                                                    guardarRespaldo(context,  requestRegistroInventario)
+                                                    guardarRespaldo(context,  requestRegistroInventario,FechaFija)
                                                     Toast.makeText(context, "Registro Grabado", Toast.LENGTH_SHORT).show()
                                                 }
                                                 else
@@ -1349,30 +1648,111 @@ fun SecondScreen(navController: NavController, param: String, param2: String)
 }
 
 
-
+/*
 fun obtenerNombreDelDispositivo(): String {
     val fabricante = Build.MANUFACTURER // Ejemplo: "Honeywell"
     val modelo = Build.MODEL           // Ejemplo: "CT50"
 
     return "Dispositivo $fabricante $modelo"
 }
-
+*/
 fun obtenerNombreDelDispositivo(context: Context): String {
+
     return Settings.Global.getString(context.contentResolver, Settings.Global.DEVICE_NAME) ?: "Desconocido"
 }
 
+@Composable
+fun LoadingIndicator() {
+    val infiniteTransition = rememberInfiniteTransition()
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing)
+        )
+    )
 
-fun mostrarDialogo(context: Context, titulo: String, mensaje: String)
-{
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .wrapContentSize(Alignment.Center)
+    ) {
+        Canvas(modifier = Modifier.size(60.dp)) {
+            drawArc(
+                color = Color(0xFF00909E), // Color personalizado
+                startAngle = angle,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Cargando...",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Red,
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}
 
 
+
+fun mostrarDialogoMasivo(context: Context, titulo: String, mensaje: String) {
     val builder = AlertDialog.Builder(context)
     builder.setTitle(titulo)
-    builder.setMessage(mensaje)
-    builder.setPositiveButton("OK", null)
-    builder.show()
+        .setMessage(mensaje)
+        // Puedes omitir el botón OK si no quieres que el usuario interactúe
+        .setCancelable(true)
 
+    val dialog = builder.create()
+    dialog.show()
+
+    // Cierra el diálogo automáticamente después de 1 segundo (1000 ms)
+    Handler(Looper.getMainLooper()).postDelayed({
+        if(dialog.isShowing) {
+            dialog.dismiss()
+        }
+    }, 1000)
 }
+
+
+
+
+fun mostrarDialogo(context: Context, titulo: String, mensaje: String) {
+    val builder = AlertDialog.Builder(context)
+    builder.setTitle(titulo)
+        .setMessage(mensaje)
+        .setPositiveButton("OK") { dialog, _ ->
+            dialog.dismiss() // Cierra el diálogo correctamente
+        }
+
+    val dialog = builder.create()
+    dialog.setOnDismissListener {
+        // Opcional: Liberar recursos aquí si es necesario
+    }
+    dialog.show()
+}
+
+fun mostrarDialogo4(context: Context, titulo: String, mensaje: String) {
+    val builder = AlertDialog.Builder(context)
+    builder.setTitle(titulo)
+        .setMessage(mensaje)
+        .setPositiveButton("OK") { dialog, _ ->
+            dialog.dismiss() // Cierra el diálogo correctamente
+        }
+
+    val dialog = builder.create()
+    dialog.window?.setBackgroundDrawableResource(android.R.color.holo_blue_light)  // Cambia el fondo
+
+    dialog.setOnDismissListener {
+        // Opcional: Liberar recursos aquí si es necesario
+    }
+    dialog.show()
+}
+
+
 
 fun mostrarDialogo3(context: Context, titulo: String, mensaje: String) {
     AlertDialog.Builder(context)
@@ -1478,6 +1858,8 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 
             val context = LocalContext.current
             val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+
+            Log.d("*MAKITA*", "NOMBRE: $gnombreDispositivo")
 
             val subtitulo = "$gLocal $gnombreDispositivo"
 
@@ -1951,7 +2333,6 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
                         onClick = {
                             if (extractedText.isNotEmpty()) {
 
-
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
 
@@ -2008,7 +2389,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 
                                                     var successMessage = "Ubicación actualizada exitosamente"
 
-                                                    guardarRespaldo(context,  requestRegistroInventario)
+                                                    guardarRespaldo(context,  requestRegistroInventario,FechaFija)
                                                     Toast.makeText(context, "Registro Grabado", Toast.LENGTH_SHORT).show()
                                                 }
                                                 else
@@ -2139,6 +2520,568 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 }
 
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CuartaScreen(navController: NavController, param: String, param2: String, param3: String, param4: String, param5: String)
+{
+    var gTipoItem by remember { mutableStateOf("") }
+    var gLocal by remember { mutableStateOf("") }
+    var gUsuario by remember { mutableStateOf("") }
+    var gFecha by remember { mutableStateOf("") }
+    var gFechaInventario by remember { mutableStateOf("") }
+    var gFechaInventario2 by remember { mutableStateOf("") }
+    var gGrupoBodega by remember { mutableStateOf("") }
+
+    val scrollState = rememberScrollState()
+    var ultimaubicacion2 by remember { mutableStateOf("") }
+    var ItemReconteo by remember { mutableStateOf("") }
+    var respuesta55 by remember { mutableStateOf<List<ItemsReconteoResponse>>(emptyList()) }
+    var errorState by remember { mutableStateOf<String?>(null) }
+    var cantidadMap by remember { mutableStateOf(mutableMapOf<String, String>()) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val listaItems = remember { mutableStateListOf<ItemConCantidad>() }
+    val calendar = Calendar.getInstance()
+    var isLoading by remember { mutableStateOf(true) }
+    var SinCarga by remember { mutableStateOf(true) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    var botonVolver  by remember { mutableStateOf(true) }
+    var botonLimpiar by remember { mutableStateOf(true) }
+    var botonGrabar  by remember { mutableStateOf(true) }
+
+    var swCargando by remember { mutableStateOf(true) }
+
+
+    var mostrarPopup by remember { mutableStateOf(false) }
+
+    var showItemDialog by remember { mutableStateOf(false) }
+    var selectedItemTexto by remember { mutableStateOf("") }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+    ) {
+
+        gTipoItem = param ?: gTipoItem
+        gLocal = param2 ?: gLocal
+        gUsuario = param3 ?: gUsuario
+        gFechaInventario2 = param4 ?: gFechaInventario
+        gGrupoBodega = param5 ?: gGrupoBodega
+
+
+        gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
+
+
+        val gyear = ObtenerAno(gFechaInventario)
+        val gmonth =  ObtenerMes(gFechaInventario)
+
+
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            val context = LocalContext.current
+            val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+            val subtitulo = "$gLocal Dispositivo$gnombreDispositivo "
+
+            TituloReconteo()
+            Separar()
+            Titulo3(param = gTipoItem, param2 = gLocal, param3 = gUsuario ,param4 = gFechaInventario , param5 = gnombreDispositivo )
+            Separar()
+
+            if (swCargando) {
+                LoadingIndicator()
+            }
+
+            LaunchedEffect(gyear, gmonth, gLocal, gTipoItem, gUsuario, gGrupoBodega) {
+
+                try {
+
+                   // val resultado = apiService.obtenerReconteo(
+                   //     "MAKITA", gyear.toString(), gmonth.toString(), "RECONTEO", "1", gLocal, gTipoItem, gUsuario
+                   // )
+
+
+                    val resultado = apiService.obtenerReconteo(
+                        "MAKITA", gyear.toString(), gmonth.toString(), "RECONTEO", gLocal, gTipoItem, gUsuario,gGrupoBodega
+                    )
+
+                    respuesta55  = resultado
+
+                    swCargando   = false
+
+                    listaItems.clear()
+
+                    listaItems.addAll(resultado.map { item ->
+                        ItemConCantidad(
+                            tipoitem = item.Clasif1 ?: "Sin TipoItem",
+                            numeroreconteo = item.NumeroReconteo ?: "Sin Reconteo",
+                            ubicacion = item.Ubicacion ?: "Sin Ubicacion",
+                            item = item.Item ?: "Sin Item",
+                            cantidad = ""
+                        )
+                    })
+
+
+                    botonVolver  = true
+                    botonLimpiar = true
+                    botonGrabar  = true
+
+
+
+                } catch (e: Exception) {
+                    errorState = "Error al obtener Reconteos"
+
+                    botonVolver  = true
+                    botonLimpiar = false
+                    botonGrabar  = false
+                    swCargando = false
+
+                    val mensaje3 = "No tiene asignados reconteos verifique con Supervisor su actividad. Usuario:  ${gUsuario} "
+                    mostrarDialogo(context, "Error",mensaje3)
+
+                }
+            }
+
+
+            val headers = listOf("Nro","Item", "Ubicacion   ", "Cantidad")
+            val fields = listOf<(ItemsReconteoResponse) -> String>(
+                { item -> item.Clasif1 ?: "Sin TipoItem" },
+                { item -> item.NumeroReconteo ?: "Sin NumeroReconteo" },
+                { item -> item.Item ?: "Sin Item" },
+                { item -> item.Ubicacion ?: "Sin Ubicacion" }
+
+
+
+            )
+
+          //aqui el box
+
+            Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                Column {
+                    // Crear las cabeceras en una fila fija
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        headers.forEach { header ->
+                            Text(
+                                text = header,
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .padding(horizontal = 3.dp)
+                                    .padding(vertical = 5.dp),
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00909E),
+                                fontSize = 17.sp,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+
+                    val cantidades = remember { mutableStateMapOf<Int, String>() }
+
+                    /*ACA*/
+
+
+
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxHeight(0.8f)
+                            .width(600.dp)
+                            .padding(top = 3.dp)
+                    ) {
+                        itemsIndexed(respuesta55) { index, item ->
+                            val rowColor = if (index % 2 == 0) Color(0xFFF1F1F1) else Color.White
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(rowColor)
+
+                                    .padding(vertical = 3.dp)
+                                )
+                            {
+                                // Mostrar los campos de la respuesta (TipoItem, Item, Ubicacion)
+                                fields.forEachIndexed { index, field ->
+
+
+
+                                    if (index == 1) {
+
+                                        val valorCampo = field(item)
+
+                                        val textColor = if (index == 3) Color.Blue
+                                        else Color.Black
+
+
+                                        Text(
+                                            text = field(item),
+                                            color = textColor,
+                                            modifier = Modifier
+                                                .width(40.dp)
+                                                .padding(horizontal = 3.dp)
+                                                .padding(vertical = 5.dp)
+                                            ,
+                                            fontSize = 17.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                    }
+
+                                    if (index > 1)
+                                    {
+
+                                    val textColor = if (index == 3) Color.Blue
+                                    else Color.Black
+
+                                    Text(
+                                        text = field(item),
+                                        color = textColor,
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .padding(horizontal = 2.dp)
+                                            .padding(vertical = 5.dp)
+                                            .clickable {
+                                                if (index == 2) {
+                                                    selectedItemTexto = item.Item  // o cualquier campo que quieras mostrar
+                                                    showItemDialog = true
+                                                    mostrarDialogo4(context, "Item", selectedItemTexto)
+
+                                                }
+                                            }
+                                        ,
+                                        fontSize = 17.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                }
+                                }
+
+                                val cantidad = cantidades[index] ?: ""
+
+                                TextField(
+                                    value = cantidad,
+                                    onValueChange = { newValue ->
+                                       // if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                       //     cantidades[index] = newValue
+                                       // }
+                                        if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                            cantidades[index] = newValue
+                                            listaItems[index] = listaItems[index].copy(cantidad = newValue)
+                                            Log.d("*MAKITA*", "Cantidad actualizada para ${listaItems[index].item}: ${listaItems[index].cantidad}")
+                                        }
+                                    },
+                                    placeholder = { Text("Cantidad") },
+                                    keyboardOptions = KeyboardOptions.Default.copy(
+                                        keyboardType = KeyboardType.Number,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    modifier = Modifier
+                                        .width(84.dp)
+                                        .height(50.dp)
+                                      /*  .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))*/
+                                        .padding(horizontal = 2.dp),
+                                    textStyle = TextStyle(
+                                        fontSize = 18.sp,
+                                        color = Color.Red,
+                                        fontFamily = FontFamily.Serif,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    singleLine = true
+                                )
+
+                                /*CANTIDAD*/
+
+                            }
+                        }
+
+                        /*HASTA AQUI LAZY*/
+
+
+                    }
+
+
+
+
+                    Column(
+                        modifier = Modifier.fillMaxSize(),  // Ajusta la columna a todo el espacio disponible
+                        verticalArrangement = Arrangement.Bottom // Mueve los elementos al final
+                    )
+                    {
+
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(10.dp),  // Margen alrededor de la fila
+                            horizontalArrangement = Arrangement.SpaceBetween // Espacia los botones entre sí
+                        ) {
+                            Button(
+                                onClick = { navController.popBackStack() },
+                                enabled = botonVolver,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF00909E),
+                                    contentColor = Color.White
+                                ),
+
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .width(108.dp)
+                                    .height(43.dp)
+                                , shape = RoundedCornerShape(8.dp)
+                            ) {  Icon(
+                                imageVector = Icons.Filled.ArrowBackIosNew,
+                                contentDescription = "Volver",
+                                tint = Color.White
+                            )
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                            }
+
+
+
+                            Button(
+                                    onClick = {
+                                       // respuesta55 = emptyList() /// limpia todo
+                                        cantidadMap = mutableMapOf()
+                                        respuesta55.forEachIndexed { index, _ ->
+                                        cantidades[index] = ""}
+                                },
+
+                                enabled = botonLimpiar,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF00909E),
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .width(108.dp)
+                                    .height(43.dp),
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = "Limpiar",
+                                    tint = Color.White
+                                )
+                                Text(
+                                    text = "Limpiar",
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+
+
+                            }
+
+
+
+
+
+
+                            // ACA GRABAR
+
+                            Button(
+
+                                onClick = {
+
+
+                                  //  Log.d("*MAKITA*", "Click en el botón GRABAR")
+
+                                    if (listaItems.any { it.cantidad.isEmpty() }) {
+                                        Log.d("*MAKITA*", "Error: Hay campos de cantidad vacíos")
+                                        mostrarDialogo(context, "Error", "Error debe Ingresar todas las cantidades")
+                                        return@Button
+                                    }
+
+                                    //if (listaItems.isEmpty()) {
+                                    //    Log.d("*MAKITA*", "Lista de Items está vacía, no hay datos para grabar.")
+                                    //}
+                                    //else {
+                                    //  listaItems.forEach { item ->
+                                    //     Log.d("*MAKITA*", "Procesando Item: ${item.item}, Cantidad: ${item.cantidad}")
+                                    // }
+                                    // }
+
+
+
+
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        var grabacionExitosa = true
+
+                                        listaItems.forEach { item ->
+                                            Log.d("*MAKITA*ACA*4*", "entra lista graba ok ${item.item} ")
+                                            try {
+
+                                                //val ubicacionValida: String? = if (item.ubicacion.isNullOrEmpty()) null else item.ubicacion
+                                                val ubicacionValida: String = item.ubicacion?.takeIf { it.isNotEmpty() } ?: ""
+
+                                                val requestRegistroReconteo = RegistraReconteoRequest(
+                                                    Id = "1",
+                                                    Empresa = "MAKITA",
+                                                    Agno = gyear.toString(),
+                                                    Mes = gmonth.toString(),
+                                                    FechaInventario = gFechaInventario,
+                                                    TipoInventario = "RECONTEO",
+                                                    NumeroReconteo = item.numeroreconteo,
+                                                    NumeroLocal = gLocal,
+                                                    GrupoBodega = gGrupoBodega,
+                                                    Clasif1 = item.tipoitem,
+                                                    Ubicacion = ubicacionValida,
+                                                    Item = item.item,
+                                                    Cantidad = item.cantidad,
+                                                    Estado = "Ingresado",
+                                                    Usuario = gUsuario,
+                                                    NombreDispositivo = gnombreDispositivo
+                                                )
+
+
+                                                val response = withContext(Dispatchers.IO) {
+                                                    apiService.insertarReconteo(requestRegistroReconteo)
+                                                }
+
+
+                                                if (response.isSuccessful) {
+
+
+
+                                                    grabacionExitosa = true
+                                                    val body = response.body()
+
+                                                    guardarRespaldoReconteo(context, requestRegistroReconteo, gFechaInventario)
+
+                                                    val mensajee2 = "Item ${item.item} grabado exitosamente(1)."
+                                                    mostrarDialogoMasivo(context, "Mensaje  ", mensajee2)
+
+                                                    Toast.makeText(context, mensajee2, Toast.LENGTH_SHORT).show()
+
+                                                    delay(1500)
+
+                                                }
+                                                else
+                                                {
+                                                    Log.e("MAKITA*ACA*", "No Correcto is sucess")
+                                                    grabacionExitosa = false
+                                                    val errorCode = response.code()  // Código de error HTTP
+                                                    val errorBody = response.errorBody()?.string()  // Cuerpo del error (si existe)
+
+
+                                                    var mensajen = "Error al grabar el item ${item.item}: ${response.errorBody()?.string()}"
+                                                    mostrarDialogo(context, "Error", mensajen)
+                                                    Log.e("*MAKITA*ACA*4*", "Error al grabar el item ${item.item}: ${response.errorBody()?.string()}")
+                                                }
+
+                                            } catch (e: Exception)
+                                                {
+
+                                                Log.e("MAKITA*ACA*", "No Correcto catch")
+                                                grabacionExitosa = false
+                                                //Log.e("*MAKITA*", "Error de red al enviar el item ${item.item}: ${e.localizedMessage}")
+
+                                                    val errorMessage: String = e.message?.toString() ?: "Descripción no disponible"
+
+
+                                                    val errorState: String = if (errorMessage.contains("500") || errorMessage.contains("200")) {
+                                                        "No se encontraron datos para el item proporcionado"
+                                                    } else {
+                                                        "Error al grabar: $errorMessage"
+                                                    }
+
+
+                                                    mostrarDialogo(context, "Error", errorState)
+
+                                                    //e.printStackTrace()
+
+
+                                            }
+                                        }
+
+                                        Log.e("*MAKITA*ACA*4*", "Error al grabacionExitosa el item ${grabacionExitosa}")
+
+                                        if (grabacionExitosa)
+                                        {
+                                            listaItems.clear()
+                                            cantidadMap = mutableMapOf()
+                                            respuesta55 = emptyList()
+
+                                            respuesta55.forEachIndexed { index, _ ->
+                                                cantidades[index] = ""
+                                            }
+                                            cantidadMap.clear()
+                                            cantidades.clear()
+
+                                        }
+                                    }
+                                },
+                                enabled = botonGrabar,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF00909E),
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .width(108.dp)
+                                    .height(43.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+
+
+                            {
+                                Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Enviar",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+
+                            ///
+
+                        }
+
+
+
+                        // ACA TERMINA LAZY
+                    }
+                }
+            }
+
+
+            //HASTA aqui
+
+
+        }
+    }
+}
+
+@Composable
+fun ObtenerAno(gFechaInventario: String): Int {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        LocalDate.parse(gFechaInventario, formatter).year
+    } catch (e: Exception) {
+        0 // Devuelve 0 si hay error
+    }
+}
+
+@Composable
+fun ObtenerMes(gFechaInventario: String): String {
+    return try {  // <- Aquí comienza el bloque try
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val mes = LocalDate.parse(gFechaInventario, formatter).month.value
+        String.format("%02d", mes) // <- Aquí se devuelve el mes en formato "MM"
+    } catch (e: DateTimeParseException)
+    {  // <- Si hay un error, entra aquí
+        "00"  // <- Se devuelve "00" en caso de error
+    }
+}
 @Composable
 fun Titulo() {
     Box(
@@ -2156,6 +3099,25 @@ fun Titulo() {
         )
     }
 }
+
+@Composable
+fun TituloReconteo() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+    ) {
+        Text(
+            text = "RECONTEO",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.Center),
+            color = Color(0xFF00909E)
+        )
+    }
+}
+
 
 @Composable
 fun Separar(){
@@ -2191,9 +3153,62 @@ fun Titulo2(param: String?, param2: String?)
 }
 
 
-fun guardarRespaldo(context: Context, registro: RegistraInventarioRequest) {
+@Composable
+fun Titulo3(param: String?, param2: String?, param3: String?, param4: String?, param5: String?)
+{
+
+    Box(
+        modifier = Modifier
+            .padding(top = 4.dp)
+    ) {
+        Text(
+            text ="Tipo ${param ?: "No hay parámetro"}  Local: ${param2 ?: "No hay parámetro"} ",
+            fontSize   = 15.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .padding(2.dp)
+                .align(Alignment.Center)
+        )
+
+    }
+
+    Box(
+        modifier = Modifier
+            .padding(top = 4.dp)
+    ) {
+        Text(
+            text ="Usuario ${param3 ?: "No hay parámetro"}  Fecha: ${param4 ?: "No hay parámetro"} ",
+            fontSize   = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Red,
+            modifier = Modifier
+                .padding(2.dp)
+                .align(Alignment.Center)
+        )
+
+    }
+
+    Box(
+        modifier = Modifier
+            .padding(top = 4.dp)
+    ) {
+        Text(
+            text ="Dispositivo ${param5 ?: "No hay parámetro"}   ",
+            fontSize   = 15.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .padding(5.dp)
+                .align(Alignment.Center)
+        )
+
+    }
+}
+
+fun guardarRespaldo(context: Context, registro: RegistraInventarioRequest,fechaInventario: String)
+{
     // Ruta del archivo
-    val archivo = File(context.filesDir, "inventario.csv")
+
+    val archivo = File(context.filesDir, "inventario_${fechaInventario}.csv")
 
     Log.d(
         "*MAKITA*",
@@ -2244,6 +3259,37 @@ fun guardarRespaldo(context: Context, registro: RegistraInventarioRequest) {
     }
 }
 
+fun guardarRespaldoReconteo(context: Context, registro: RegistraReconteoRequest, fechaInventario: String)
+{
+    // Ruta del archivo
+
+    val fechaSinCaracter = fechaInventario.replace("/", "")
+
+    val archivo = File(context.filesDir, "reconteo_${fechaSinCaracter}.csv")  // Concatenamos la fecha al nombre
+
+    Log.e("*MAKITA*ACA*4", "Muestra dir item ${context.filesDir}")
+    Log.e("*MAKITA*ACA*4", "Nombre archivo el item ${archivo}")
+
+    // Verificar si el archivo existe, si no, escribir el encabezado
+    if (!archivo.exists()) {
+        val encabezado = "Id;Empresa;Agno;Mes;FechaInventario;NumeroReconteo;NumeroLocal;GrupoBodega;Clasif1;Ubicacion;Item;Cantidad;Estado;Usuario;NombreDispositivo\n"
+        archivo.writeText(encabezado) // Escribir encabezado en el archivo
+    }
+
+    // Construir contenido del archivo
+    val contenido = """${registro.Id};${registro.Empresa};${registro.Agno};${registro.Mes};${registro.FechaInventario};${registro.NumeroReconteo};${registro.NumeroLocal};${registro.GrupoBodega};${registro.Clasif1};${registro.Ubicacion};${registro.Item};${registro.Cantidad};${registro.Estado};${registro.Usuario};${registro.NombreDispositivo}""".trimIndent()
+
+
+    try {
+        // Escribir los datos en el archivo, añadiendo una nueva línea
+        archivo.appendText(contenido + "\n")
+        Toast.makeText(context, "Datos guardados exitosamente en formato CSV", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        // Manejar errores
+        Toast.makeText(context, "Error al guardar los datos: ${e.message}", Toast.LENGTH_SHORT).show()
+       // e.printStackTrace()
+    }
+}
 
 
 
