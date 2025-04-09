@@ -254,7 +254,10 @@ fun MainScreen(navController: NavController) {
 
     {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
 
@@ -773,8 +776,8 @@ fun SecondScreen(navController: NavController, param: String, param2: String , u
             OutlinedTextField(
                 value = ubicacion,
                 onValueChange = {
-                    ubicacion = it.uppercase()
-                    Log.d("*MAKITA*", "Ubicación ingresada: $it")
+                    ubicacion = it.uppercase().trim()
+                    Log.d("*MAKITA*", "Ubicación ingresada: ${it.length}")
                     // Mover el foco al siguiente campo si se cumple la condición
                     if (it.length >= 5) {
                         keyboardController?.hide()
@@ -1236,6 +1239,11 @@ fun obtenerNombreDelDispositivo(context: Context): String {
     return Settings.Global.getString(context.contentResolver, Settings.Global.DEVICE_NAME) ?: "Desconocido"
 }
 
+
+/*fun obtenerNombreDelDispositivo(context: Context): String {
+    return "Honeywell-30"
+}*/
+
 fun mostrarDialogo(context: Context, titulo: String, mensaje: String)
 {
     val builder = AlertDialog.Builder(context)
@@ -1566,6 +1574,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String , 
                                     }
 
                                     // Solo si response35 NO es "NO", ejecuta la segunda API
+                                    Log.d("*MAKITA*", "DATO ENVIADO :: $extractedText")
                                     val apiResponse = apiService.obtenerUbicacionItem(extractedText)
                                     Log.d("*MAKITA*", "obtenerUbicacionItem: $apiResponse")
 
