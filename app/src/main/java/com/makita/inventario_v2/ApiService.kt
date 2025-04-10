@@ -167,21 +167,6 @@ interface ApiService
         @Path("usuario") Usuario: String
     ):  String
 
-    /*
-    @GET("api/insertar-inventario/{empresa}/{agno}/{mes}/{tipoinventario}/{numeroconteo}/{numerolocal}/{tipoitem}/{usuario}")
-    suspend fun obtenerReconteo(
-        @Path("empresa") Empresa: String,
-        @Path("agno") Agno: String,
-        @Path("mes") Mes: String,
-        @Path("tipoinventario") TipoInventario: String,
-        @Path("numeroconteo") NumeroConteo: String,
-        @Path("numerolocal") NumeroLocal: String,
-        @Path("tipoitem") TipoItem: String,
-        @Path("usuario") Usuario: String,
-        ):  List<ItemsReconteoResponse>
-
-    */
-
     @GET("api/insertar-inventario/{empresa}/{agno}/{mes}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
     suspend fun obtenerReconteo(
         @Path("empresa") Empresa: String,
@@ -208,19 +193,5 @@ interface ApiService
         @Path("item") Item: String,
         @Path("tipoitem") tipoitem: String
     ):  String
-
-
-
-
-    // @GET("api/generar-etiquetaC/{item}")
-   // suspend fun obtenerHerramienta(@Path("item") item: String) : List<ItemResponse>
-
-    //@GET("api/generar-etiquetaC/{item}")
-    //suspend fun obtenerHerramienta(@Path("item") item: String) : List<ItemResponse>
-
-   // @GET("api/obtener-ubicacion/{ubicacion}")
-   // suspend fun obtenerUbicacion(@Path("ubicacion") ubicacion: String) : List<UbicacionResponse>
-
-
 
 }
