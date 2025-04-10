@@ -379,7 +379,7 @@ fun MainScreen(navController: NavController) {
 
                     }
                     catch (e: Exception) {
-                        mostrarDialogo(context, "ErrorAPI", "Error al obtener el usuario: ${e.message}")
+                        mostrarDialogo(context, "Informacion", "No tiene usuario asignado")
                        // Log.e("ErrorAPI", "Error al obtener el usuario: ${e.message}", e)
                     }
 
