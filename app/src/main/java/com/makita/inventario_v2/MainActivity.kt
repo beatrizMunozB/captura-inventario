@@ -302,8 +302,10 @@ fun MainScreen(navController: NavController) {
     Log.d("*MAKITA*", "Usuario obtener: $gnombreDispositivo")
 
     val anioActual = LocalDate.now().year
+    val anioString = anioActual.toString()
     val mesActual  =  String.format("%02d", LocalDate.now().monthValue )
 
+    Log.d("*MAKITA*", "Usuario Ano: $anioActual")
 
     CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
 
@@ -351,8 +353,10 @@ fun MainScreen(navController: NavController) {
 
  */
 
+                var fechaSeleccionada by rememberSaveable { mutableStateOf("") }
 
-                DatePickerWithTextField(selectedDate, { date -> selectedDate = date })
+
+                DatePickerWithTextField(selectedDate = fechaSeleccionada, { date -> selectedDate = date })
 
 
 
@@ -363,9 +367,13 @@ fun MainScreen(navController: NavController) {
 
                         val respuesta01 = withContext(Dispatchers.IO) {
                            // var gnombreDispositivo = "Honeywell-30"
+<<<<<<< Updated upstream
                             apiService.obtenerUsuario(gnombreDispositivo, mesActual,
                                 anioActual.toString()
                             )
+=======
+                            apiService.obtenerUsuario(gnombreDispositivo, mesActual, anioString)
+>>>>>>> Stashed changes
                         }
 
                         usuarioasigando = respuesta01.data.Usuario
@@ -429,7 +437,9 @@ fun MainScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(10.dp))
             ComboBoxLocal(
                 selectedOption = selectedLocal,
-                onOptionSelected = { selectedLocal = it }
+                onOptionSelected = { selectedLocal = it
+                                     selectedBodega = ""
+                                   }
             )
 
 
@@ -618,8 +628,14 @@ fun DatePickerWithTextField(selectedDate: String, onDateSelected: (String) -> Un
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
-    var selectedDate2 by remember { mutableStateOf(String.format("%02d/%02d/%d", day, month + 1, year)) }
+    var selectedDate2 by remember { mutableStateOf(if (selectedDate.isNotEmpty()) selectedDate else String.format("%02d/%02d/%d", day, month + 1, year)) }
+    val defaultDate = String.format("%02d/%02d/%d", day, month + 1, year)
 
+    LaunchedEffect(Unit) {
+        if (selectedDate.isEmpty()) {
+            onDateSelected(defaultDate)
+        }
+    }
 
     val datePickerDialog = remember {
         DatePickerDialog(
@@ -836,7 +852,7 @@ fun ComboBoxGrupoBodega(
     var opciones by remember { mutableStateOf<List<GrupoBodegaResponse>>(emptyList()) }
     val context = LocalContext.current
 
-    Log.d("*MAKITA*111*", "Pasa1 por ComboBoxGrupoBodega: $local")
+
 
     LaunchedEffect(local) {
 
