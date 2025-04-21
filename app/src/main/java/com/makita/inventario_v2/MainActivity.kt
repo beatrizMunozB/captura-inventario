@@ -367,13 +367,11 @@ fun MainScreen(navController: NavController) {
 
                         val respuesta01 = withContext(Dispatchers.IO) {
                            // var gnombreDispositivo = "Honeywell-30"
-<<<<<<< Updated upstream
+
                             apiService.obtenerUsuario(gnombreDispositivo, mesActual,
                                 anioActual.toString()
                             )
-=======
-                            apiService.obtenerUsuario(gnombreDispositivo, mesActual, anioString)
->>>>>>> Stashed changes
+
                         }
 
                         usuarioasigando = respuesta01.data.Usuario
