@@ -190,8 +190,9 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "second_screen/{param}/{param2}",
+            route = "second_screen/{param}/{param2}/{param3}",
             arguments = listOf(navArgument("param")  { type = NavType.StringType },
+                               navArgument("param2") { type = NavType.StringType },
                                navArgument("param2") { type = NavType.StringType }
                         )
         ) { backStackEntry ->
@@ -209,9 +210,10 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "third_screen/{param}/{param2}",
-            arguments = listOf(navArgument("param")  { type = NavType.StringType },
-                navArgument("param2") { type = NavType.StringType }
+            route = "third_screen/{param}/{param2}/{param3}",
+            arguments = listOf(navArgument("param") { type = NavType.StringType },
+                navArgument("param2") { type = NavType.StringType },
+                navArgument("param3") { type = NavType.StringType }
             )
         ) { backStackEntry ->
 
@@ -220,9 +222,9 @@ fun AppNavigation() {
             //val param2 = backStackEntry.arguments?.getString("param2") ?: ""
             val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
+            val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
 
-
-                TerceraScreen(navController = navController, param = param, param2 = param2)
+                TerceraScreen(navController = navController, param = param, param2 = param2 ,param3 = param3)
 
 
         }
@@ -367,13 +369,9 @@ fun MainScreen(navController: NavController) {
 
                         val respuesta01 = withContext(Dispatchers.IO) {
                            // var gnombreDispositivo = "Honeywell-30"
-<<<<<<< Updated upstream
-                            apiService.obtenerUsuario(gnombreDispositivo, mesActual,
-                                anioActual.toString()
-                            )
-=======
+
                             apiService.obtenerUsuario(gnombreDispositivo, mesActual, anioString)
->>>>>>> Stashed changes
+
                         }
 
                         usuarioasigando = respuesta01.data.Usuario
@@ -490,9 +488,9 @@ fun MainScreen(navController: NavController) {
                 if (selectedOption == "INVENTARIO")
                 {
                     if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") { // Reemplaza "specific_option" con la opción deseada
-                        navController.navigate("third_screen/$selectedTipo/$selectedLocal")
+                        navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
                     } else {
-                        navController.navigate("second_screen/$selectedTipo/$selectedLocal")
+                        navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
                     }
                 }
                 else
@@ -876,12 +874,12 @@ fun ComboBoxGrupoBodega(
 
         catch (e: Exception)
         {
-           // Log.e("MAKITA", "Error al obtener grupo ", e)
-
-            val linea = "Debe Seleccionar local y Grupo " + e.message
+            // Log.e("MAKITA", "Error al obtener grupo ", e)
+            //val linea = "Debe Seleccionar local y Grupo " + e.message
+            val linea = "Debe Seleccionar local y Grupo "
             mostrarDialogo2(
                 context,
-                "Error",
+                "Informacion",
                 linea
             )
 
@@ -1099,7 +1097,9 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
             //    enabled = false
             //)
 
-
+            LaunchedEffect(Unit) {
+                ubicacionFocusRequester.requestFocus()
+            }
 
             OutlinedTextField(
                 value = ubicacion,
@@ -1703,7 +1703,7 @@ fun isNetworkAvailable(context: Context): Boolean {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TerceraScreen(navController: NavController, param: String, param2: String)
+fun TerceraScreen(navController: NavController, param: String, param2: String , param3: String)
 
 {
     val ubicacionFocusRequester = remember { FocusRequester() }
@@ -1741,6 +1741,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
     var nombreCapturador by remember { mutableStateOf("") }
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal    by remember { mutableStateOf("") }
+    var gUsuarioAsignado    by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     var ultimaubicacion by remember { mutableStateOf("") }
     var mensajeDialogo by remember { mutableStateOf("") }
@@ -1763,6 +1764,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
 
         gTipoItem = param ?: gTipoItem
         gLocal = param2 ?: gLocal
+        gUsuarioAsignado = param3 ?: gLocal
 
         Column(
             modifier = Modifier
@@ -2263,7 +2265,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String)
                                                     Item =  extractedText.trim(),
                                                     Cantidad = cantidad,
                                                     Estado = "Ingresado",
-                                                    Usuario = gnombreDispositivo,
+                                                    Usuario = gUsuarioAsignado,
                                                     NombreDispositivo = gnombreDispositivo
                                                 )
 

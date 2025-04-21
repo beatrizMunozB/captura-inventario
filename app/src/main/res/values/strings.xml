@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Inventario_V2</string>
+    <string name="app_name">Makita Inventario y Reconteo</string>
+    <string name="app_name_launcher">Makita Inventario y Reconteo</string>
 </resources>
