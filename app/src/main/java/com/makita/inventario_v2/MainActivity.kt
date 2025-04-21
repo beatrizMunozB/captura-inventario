@@ -370,7 +370,10 @@ fun MainScreen(navController: NavController) {
                         val respuesta01 = withContext(Dispatchers.IO) {
                            // var gnombreDispositivo = "Honeywell-30"
 
-                            apiService.obtenerUsuario(gnombreDispositivo, mesActual, anioString)
+                            apiService.obtenerUsuario(gnombreDispositivo, mesActual,
+                                anioActual.toString()
+                            )
+
 
                         }
 
