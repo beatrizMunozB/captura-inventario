@@ -1,4 +1,4 @@
-package com.makita.inventario_v2
+package com.makita.InventarioDirigido
 
 import org.junit.Test
 

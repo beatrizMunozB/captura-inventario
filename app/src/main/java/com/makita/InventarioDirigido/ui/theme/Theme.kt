@@ -1,4 +1,4 @@
-package com.makita.inventario_v2.ui.theme
+package com.makita.InventarioDirigido.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun Inventario_V2Theme(
+fun InventarioDirigidoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

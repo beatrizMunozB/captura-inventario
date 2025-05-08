@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Inventario_V2"
+rootProject.name = "InventarioDirigido"
 include(":app")
  

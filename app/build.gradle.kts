@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.makita.inventario_v2"
+    namespace = "com.makita.InventarioDirigido"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.makita.inventario_v2"
+        applicationId = "com.makita.InventarioDirigido"
         minSdk = 26
         targetSdk = 34
         versionCode = 2
@@ -64,6 +64,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
+   // implementation("androidx.compose.foundation:foundation:1.5.0")
+    implementation( "androidx.compose.foundation:foundation:1.3.1")
     
    // implementation("androidx.navigation:navigation-compose:2.5.3")
 

@@ -1,4 +1,4 @@
-package com.makita.inventario_v2.ui.theme
+package com.makita.InventarioDirigido.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

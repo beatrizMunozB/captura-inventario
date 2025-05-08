@@ -1,11 +1,10 @@
-package com.makita.inventario_v2
+package com.makita.InventarioDirigido
 
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
-import retrofit2.http.Query
 
 data class ItemResponse(
     var ubicacion: String,
@@ -101,12 +100,25 @@ data class ReconteoResponse(
     val ubicacion: String
 )
 
+data class Item(
+    val Item: String,
+    var Ubicacion: String,  // debe poder ser modificable si vas a actualizarla
+    val Clasif1: String = ""
+
+)
+
 
 data class GrupoBodegaResponse(
     val GrupoBodega: String,
     val NombreGrupoBodega: String
 
 )
+
+data class CategoriaResponse(
+    val Codigo: String,
+    val Descripcion: String
+)
+
 
 
 data class UltimaResponse(
@@ -193,5 +205,33 @@ interface ApiService
         @Path("item") Item: String,
         @Path("tipoitem") tipoitem: String
     ):  String
+
+
+
+     @GET("api/insertar-inventario-categoria/{empresa}")
+    //@GET("http://172.16.1.213:3001/api/insertar-inventario-categoria/{empresa}")
+    suspend fun obtenerCategoria(
+        @Path("empresa") Empresa: String
+    ):  List<CategoriaResponse>
+
+
+    @GET("api/insertar-inventario-categoria/{empresa}/{agno}/{mes}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
+    suspend fun obtenerReconteo99(
+        @Path("empresa") Empresa: String,
+        @Path("agno") Agno: String,
+        @Path("mes") Mes: String,
+        @Path("tipoinventario") TipoInventario: String,
+        @Path("numerolocal") NumeroLocal: String,
+        @Path("tipoitem") TipoItem: String,
+        @Path("usuario") Usuario: String,
+        @Path("grupobodega") GrupoBodega: String,
+    ):  List<ItemsReconteoResponse>
+
+
+    @POST("api/insertar-inventario-categoria")
+    suspend fun updateReconteo99(@Body request: RegistraReconteoRequest): Response<Unit>
+
+
+
 
 }
