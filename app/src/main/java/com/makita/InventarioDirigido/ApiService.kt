@@ -94,6 +94,41 @@ data class ItemsReconteoResponse
 
 )
 
+data class VerListadoResponse
+    (
+    val Clasif1 : String,
+    val NumeroReconteo : String,
+    val Item : String,
+    val Ubicacion : String
+)
+
+data class VerListadoResponse2
+    (
+    var Clasif1 : String,
+    var NumeroReconteo : String,
+    var Item : String,
+    var Ubicacion : String,
+    var Cantidad : String
+)
+
+
+data class VerListadoResponse3
+    (
+    var Clasif1 : String,
+    var NumeroReconteo : String,
+    var Item : String,
+    var Ubicacion : String,
+    var Cantidad : String,
+    var FechaInventario : String,
+)
+
+
+data class ReconteoResponse2(
+    val exito: Boolean,
+    val mensaje: String
+)
+
+
 data class ReconteoResponse(
     val clasif1: String,
     val Item: String,
@@ -125,8 +160,24 @@ data class UltimaResponse(
     var ubicacion: String
 )
 
+
+data class ListaDatos(
+    var id: String,
+    var item: String,
+    var cantidad: String,
+    var ubicacion: String,
+    var FechaInventario: String
+)
+
+
+
 data class InventariadoResponse(
     var respuesta: String
+)
+
+data class RespuestaPreconteo(
+    val resultado: Int,
+    val mensaje: String
 )
 
 data class ItemConCantidad(
@@ -137,11 +188,21 @@ data class ItemConCantidad(
     var cantidad: String = ""  // Cantidad ingresada por el usuario (inicialmente vacía)
 )
 
+data class ItemConCantidadHE(
+    val tipoitem: String,
+    val numeroreconteo: String,
+    val ubicacion: String,
+    val item: String,
+    var cantidad: String,
+    var fechainventario :String
+)
+
 interface ApiService
 {
 
     @GET("http://172.16.1.206:3024/api/obtener-ubicacion/{item}")
     suspend fun obtenerUbicacionItem(@Path("item") item: String) : List<ItemResponse>
+
 
     @GET("http://172.16.1.206:3024/api/consultar-asignacion-filtro/{capturador}/{mes}/{periodo}")
     suspend fun obtenerUsuario(
@@ -214,12 +275,13 @@ interface ApiService
         @Path("empresa") Empresa: String
     ):  List<CategoriaResponse>
 
-
-    @GET("api/insertar-inventario-categoria/{empresa}/{agno}/{mes}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
+    // cambiar a servidor
+    @GET("api/insertar-inventario-categoria/{empresa}/{agno}/{mes}/{fechainventario}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
     suspend fun obtenerReconteo99(
         @Path("empresa") Empresa: String,
         @Path("agno") Agno: String,
         @Path("mes") Mes: String,
+        @Path("fechainventario") fechainventario: String,
         @Path("tipoinventario") TipoInventario: String,
         @Path("numerolocal") NumeroLocal: String,
         @Path("tipoitem") TipoItem: String,
@@ -229,7 +291,25 @@ interface ApiService
 
 
     @POST("api/insertar-inventario-categoria")
-    suspend fun updateReconteo99(@Body request: RegistraReconteoRequest): Response<Unit>
+    suspend fun updateReconteo99(@Body request: RegistraReconteoRequest): ReconteoResponse2
+
+    @GET("api/insertar-inventario-vercapturaH/{tipoinventario}/{tipoitem}/{usuario}/{fechainventario}/{local}")
+    suspend fun VerLoCapturado(
+        @Path("tipoinventario") tipoinventario: String,
+        @Path("tipoitem") tipoitem: String,
+        @Path("usuario") usuario: String,
+        @Path("fechainventario") fechainventario: String,
+        @Path("local") bodega: String
+    ): List<VerListadoResponse3>
+
+    @GET("api/insertar-inventario-vercaptura/{tipoinventario}/{tipoitem}/{usuario}/{fechainventario}/{local}")
+    suspend fun VerLoCapturadoReconteo(
+        @Path("tipoinventario") tipoinventario: String,
+        @Path("tipoitem") tipoitem: String,
+        @Path("usuario") usuario: String,
+        @Path("fechainventario") fechainventario: String,
+        @Path("local") local: String
+    ): List<VerListadoResponse2>
 
 
 

@@ -109,15 +109,16 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.TextButton
 
 import androidx.compose.material3.TextFieldDefaults
@@ -128,6 +129,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.makita.InventarioDirigido.RetrofitClient.apiService
+import retrofit2.http.Path
 import java.io.IOException
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -186,10 +188,13 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "second_screen/{param}/{param2}/{param3}",
+            route = "second_screen/{param}/{param2}/{param3}/{param4}/{param5}",
             arguments = listOf(navArgument("param")  { type = NavType.StringType },
                                navArgument("param2") { type = NavType.StringType },
-                               navArgument("param2") { type = NavType.StringType }
+                               navArgument("param3") { type = NavType.StringType },
+                               navArgument("param4") { type = NavType.StringType },
+                               navArgument("param5") { type = NavType.StringType }
+
                         )
         ) { backStackEntry ->
 
@@ -199,8 +204,10 @@ fun AppNavigation() {
             val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
             val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
+            val param4 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam4"
+            val param5 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam5"
 
-            SecondScreen(navController = navController, param = param, param2 = param2,  param3 = param3)
+            SecondScreen(navController = navController, param = param, param2 = param2,  param3 = param3 ,  param4 = param4,  param5 = param5)
 
 
         }
@@ -273,6 +280,64 @@ fun AppNavigation() {
 
 
         }
+
+
+        composable(
+            route = "sexta_screen/{param}/{param2}/{param3}/{param4}/{param5}",
+            arguments = listOf(
+                navArgument("param") { type = NavType.StringType },
+                navArgument("param2") { type = NavType.StringType },
+                navArgument("param3") { type = NavType.StringType },
+                navArgument("param4") { type = NavType.StringType },
+                navArgument("param5") { type = NavType.StringType }
+
+            )
+        ) { backStackEntry ->
+
+            val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
+            val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
+            val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
+            val param4 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam4"
+            val param5 = backStackEntry.arguments?.getString("param5") ?: "DefaultParam5"
+
+
+            SextaScreen(navController = navController, param = param, param2 = param2, param3 = param3,param4 = param4 ,param5 = param5  )
+
+
+        }
+
+
+        composable(
+            route = "septima_screen/{param}/{param2}/{param3}/{param4}/{param5}/{param6}",
+            arguments = listOf(
+                navArgument("param") { type = NavType.StringType },
+                navArgument("param2") { type = NavType.StringType },
+                navArgument("param3") { type = NavType.StringType },
+                navArgument("param4") { type = NavType.StringType },
+                navArgument("param5") { type = NavType.StringType },
+                navArgument("param6") { type = NavType.IntType },
+
+            )
+        ) { backStackEntry ->
+
+            val param  = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
+            val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
+            val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
+            val param4 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam4"
+            val param5 = backStackEntry.arguments?.getString("param5") ?: "DefaultParam5"
+            val param6 = backStackEntry.arguments?.getInt("param6") ?: 0
+
+
+
+            SeptimaScreen(navController = navController, param = param, param2 = param2, param3 = param3
+                , param4 = param4, param5 = param5,  param6 = param6 )
+
+
+        }
+
+
+
+
 
 
 
@@ -399,6 +464,7 @@ fun MainScreen(navController: NavController) {
                     }
 
                     val usuario = respuesta01.data?.Usuario
+
                     //usuarioasigando = respuesta01.data.Usuario
 
                     Log.d("*MAKITA*111*", "Usuario obXXXtenido: $usuario")
@@ -406,6 +472,8 @@ fun MainScreen(navController: NavController) {
                     if (usuario.isNullOrBlank()) {
                         // El valor es null, "" o solo espacios
                         withContext(Dispatchers.Main) {
+                            showErrorDialogUSU = true
+
                             Toast.makeText(context, "⚠️ Usuario no asignado al dispositivo", Toast.LENGTH_LONG).show()
                         }
                     } else {
@@ -548,31 +616,34 @@ fun MainScreen(navController: NavController) {
 
                 }
 
-
+                val fechaFormateada = formatearFecha(selectedDate)
+                val fechaCodificada = URLEncoder.encode(fechaFormateada, StandardCharsets.UTF_8.toString())
 
                 if (selectedOption == "INVENTARIO")
                 {
                     if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS")
                        { // Reemplaza "specific_option" con la opción deseada
 
-                           if (selectedCategoria == "BATERIAS" || selectedTipo == "ACCESORIOS")
+                           if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS"  && selectedBodega == "2" )
                             {
 
                                 Log.d("*MAKITA*111*", "Pasa por selectedCategoria: $selectedCategoria")
-                                val fechaFormateada = formatearFecha(selectedDate)
-                                val fechaCodificada = URLEncoder.encode(fechaFormateada, StandardCharsets.UTF_8.toString())
+
                                 navController.navigate("quinta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
 
                             }
                             else
                             {
-                                navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
+                                if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS")  && selectedBodega == "1" )
+                                {
+                                    navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
+                                }
                             }
 
                         }
                     else
                     {
-                        navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
+                        navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
                     }
                 }
                 else
@@ -1040,7 +1111,7 @@ fun ComboBoxCategoria(
 
 
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(selectedOption) {
 
 
         try
@@ -1127,7 +1198,7 @@ fun ComboBoxCategoria(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SecondScreen(navController: NavController, param: String, param2: String,param3: String)
+fun SecondScreen(navController: NavController, param: String, param2: String,param3: String,param4: String,param5: String)
 {
     val ubicacionFocusRequester = remember { FocusRequester() }
     val cantidadFocusRequester = remember { FocusRequester() }
@@ -1155,12 +1226,17 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal    by remember { mutableStateOf("") }
     var gusuarioasigando  by remember { mutableStateOf("") }
+    var gFechaInventario by remember { mutableStateOf("") }
+    var gFechaInventario2 by remember { mutableStateOf("") }
+    var gGrupoBodega  by remember { mutableStateOf("") }
+
+
     val scrollState = rememberScrollState()
 
     var ultimaubicacion by remember { mutableStateOf("") }
     var mensajeError2 by remember { mutableStateOf("") }
     var mensajeError by remember { mutableStateOf("") }
-
+    var botonVer by remember { mutableStateOf(true) }
 
     var isLoading by remember { mutableStateOf(false) } // Estado para el loading
 
@@ -1182,6 +1258,11 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
         gTipoItem = param ?: gTipoItem
         gLocal = param2 ?: gLocal
         gusuarioasigando  = param3 ?: gusuarioasigando
+        gFechaInventario2 = param4 ?: gFechaInventario
+        gGrupoBodega = param5 ?: gGrupoBodega
+
+        gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
+
 
         textFieldValue2 = "" // Descripcion
 
@@ -1270,7 +1351,6 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
            //         nombreCapturador = "No se encontraron dispositivos"
            //     }
            // }
-
 
 
             //TextField(
@@ -1639,13 +1719,15 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly // Espaciado uniforme entre botones
+                        .padding(14.dp),
+                    //horizontalArrangement = Arrangement.SpaceEvenly // Espaciado uniforme entre boton
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     val buttonModifier = Modifier
                         .width(110.dp)  // Asegura que todos los botones tengan el mismo ancho
                         .height(45.dp)  // Asegura que todos los botones tengan la misma altura
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 3.dp)
 
                     val buttonColors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF00909E),
@@ -1653,13 +1735,39 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
                     )
 
                     Button(
-                        onClick = { navController.popBackStack() },
-                        colors = buttonColors,
-                        modifier = buttonModifier,
-                        shape = RoundedCornerShape(8.dp)
+                        onClick = {
+                            navController.navigate("septima_screen/$param/$param2/$param3/$param4/$param5/0")
+
+                        },
+
+                        enabled = botonVer,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF00909E),
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier
+                            .padding(horizontal = 7.dp, vertical = 4.dp)
+                            .width(100.dp)
+                            .height(43.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
                     ) {
-                        Text(text = "VOLVER", fontSize = 13.sp)
+                        Icon(
+                            imageVector = Icons.Default.ReceiptLong,
+                            contentDescription = "Ver lo ingresado",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Ver",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+
+
                     }
+
 
                     Button(
                         onClick = {
@@ -1675,10 +1783,21 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
                             itemFocusRequester.requestFocus()
                         },
                         colors = buttonColors,
-                        modifier = buttonModifier,
-                        shape = RoundedCornerShape(8.dp)
+                        modifier = Modifier
+                            .padding(horizontal = 7.dp, vertical = 4.dp)
+                            .width(100.dp)
+                            .height(43.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+
                     ) {
-                        Text(text = "LIMPIAR", fontSize = 13.sp)
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Borrar",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(text = "Borrar", fontSize = 14.sp)
                     }
 
                     Button(
@@ -1767,11 +1886,22 @@ fun SecondScreen(navController: NavController, param: String, param2: String,par
                             }
                         },
                         colors = buttonColors,
-                        modifier = buttonModifier,
+                        modifier = Modifier
+                            .padding(horizontal = 7.dp, vertical = 4.dp)
+                            .width(100.dp)
+                            .height(43.dp),
                         shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                         enabled = !isLoading && validarCampos()
                     ) {
-                        Text(text = "GRABAR", fontSize = 13.sp)
+                        Icon(
+                            imageVector = Icons.Default.Done,
+                            contentDescription = "Guardar datos",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+
+                        Text(text = "Guardar", fontSize = 14.sp)
                     }
                 }
             }
@@ -1998,7 +2128,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String , 
 
         gTipoItem = param ?: gTipoItem
         gLocal = param2 ?: gLocal
-        gUsuarioAsignado = param3 ?: gLocal
+        gUsuarioAsignado = param3 ?: gUsuarioAsignado
 
         Column(
             modifier = Modifier
@@ -2591,11 +2721,12 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
     var errorState by remember { mutableStateOf<String?>(null) }
     var cantidadMap by remember { mutableStateOf(mutableMapOf<String, String>()) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val listaItems = remember { mutableStateListOf<ItemConCantidad>() }
+
     val calendar = Calendar.getInstance()
     var showDialog by remember { mutableStateOf(false) }
     var botonVolver  by remember { mutableStateOf(true) }
     var botonLimpiar by remember { mutableStateOf(true) }
+    var botonVer by remember { mutableStateOf(true) }
     var botonGrabar  by remember { mutableStateOf(true) }
 
     var swCargando by remember { mutableStateOf(true) }
@@ -2603,6 +2734,13 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
 
     var showItemDialog by remember { mutableStateOf(false) }
     var selectedItemTexto by remember { mutableStateOf("") }
+
+    val listaItems = remember { mutableStateListOf<ItemConCantidad>() }
+
+    var grabacionExitosa by remember { mutableStateOf(false) }
+    var itemGrabado by remember { mutableStateOf("") }
+
+
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -2661,6 +2799,7 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
 
                     listaItems.clear()
 
+
                     listaItems.addAll(resultado.map { item ->
                         ItemConCantidad(
                             tipoitem = item.Clasif1 ?: "Sin TipoItem",
@@ -2675,6 +2814,7 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                     botonVolver  = true
                     botonLimpiar = true
                     botonGrabar  = true
+                    botonVer = true
 
 
 
@@ -2705,17 +2845,26 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
 
 
             val headers = listOf("Nro","Item", "Ubicacion", "Cantidad")
-            val fields = listOf<(ItemsReconteoResponse) -> String>(
-                { item -> item.Clasif1 ?: "Sin TipoItem" },
-                { item -> item.NumeroReconteo ?: "Sin NumeroReconteo" },
-                { item -> item.Item ?: "Sin Item" },
-                { item -> item.Ubicacion ?: "Sin Ubicacion" }
+         //   val fields = listOf<(ItemsReconteoResponse) -> String>(
+          //      { item -> item.Clasif1 ?: "Sin TipoItem" },
+          //      { item -> item.NumeroReconteo ?: "Sin NumeroReconteo" },
+          //      { item -> item.Item ?: "Sin Item" },
+          //      { item -> item.Ubicacion ?: "Sin Ubicacion" }
+          //
+          //  )
 
-
-
+            val fields = listOf<(ItemConCantidad) -> String>(
+                { it.tipoitem },
+                { it.numeroreconteo },
+                { it.item },
+                { it.ubicacion }
             )
 
-          //aqui el box
+
+
+
+
+            //aqui el box
 
             Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 Column {
@@ -2725,21 +2874,24 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                             Text(
                                 text = header,
                                 modifier = Modifier
-                                    .width(80.dp)
-                                    .padding(horizontal = 3.dp)
-                                    .padding(vertical = 5.dp),
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF00909E),
-                                fontSize = 17.sp,
-                                maxLines = 1
+                                color = Color.Blue,
+                                fontSize = 18.sp,
+                                maxLines = 1,
+                                textAlign = TextAlign.Start
                             )
                         }
                     }
 
 
-                    val cantidades = remember { mutableStateMapOf<Int, String>() }
+
 
                     /*ACA*/
+
+                    val cantidades = remember { mutableStateMapOf<Int, String>() }
+                    val enviados = remember { mutableStateMapOf<Int, Boolean>() }
+
 
                     LazyColumn(
                         modifier = Modifier
@@ -2761,7 +2913,9 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                             )
                         }
 
-                        itemsIndexed(respuesta55) { index, item ->
+
+
+                        itemsIndexed(listaItems) { index, item ->
                             val rowColor = if (index % 2 == 0) Color(0xFFF1F1F1) else Color.White
                             Row(
                                 modifier = Modifier
@@ -2771,6 +2925,20 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                     .padding(vertical = 3.dp)
                                 )
                             {
+
+                                /*INDICE*/
+                                Text(
+                                    text = (index + 1).toString(),
+                                    color = Color.DarkGray,
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(horizontal = 3.dp, vertical = 5.dp),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+
+
                                 // Mostrar los campos de la respuesta (TipoItem, Item, Ubicacion)
                                 fields.forEachIndexed { index, field ->
 
@@ -2814,7 +2982,7 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                             .padding(vertical = 5.dp)
                                             .clickable {
                                                 if (index == 2) {
-                                                    selectedItemTexto = item.Item  // o cualquier campo que quieras mostrar
+                                                    selectedItemTexto = item.item  // o cualquier campo que quieras mostrar
                                                     showItemDialog = true
                                                      //AQUI
 
@@ -2838,15 +3006,53 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                 TextField(
                                     value = cantidad,
                                     onValueChange = { newValue ->
-                                       // if (newValue.all { it.isDigit() } && newValue.length <= 4) {
-                                       //     cantidades[index] = newValue
-                                       // }
+                                        // if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                        //     cantidades[index] = newValue
+                                        // }
+                                        val anteriorIndex = index - 1
+
+                                        //val anteriorSinEnviar = index > 0 && !(listaItems[index - 1].cantidad?.isNotEmpty() == true)
+
+                                        // if (anteriorSinEnviar) {
+                                        //     Toast.makeText(context, "Debes enviar la cantidad anterior antes de continuar.", Toast.LENGTH_SHORT).show()
+
+                                        //    // Limpiar valor actual ingresado
+                                        //    cantidades[index] = ""
+                                        //    listaItems[index] = listaItems[index].copy(cantidad = "")
+
+                                        //    return@TextField
+                                        //}
+
+                                        if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                            // Si es el primer ítem o el ítem anterior ya fue enviado (ya no está en la lista)
+                                            val permitirIngreso = if (index == 0) {
+                                                true
+                                            } else {
+                                                val anteriorItem = listaItems.getOrNull(anteriorIndex)
+                                                anteriorItem == null || !anteriorItem.cantidad.isNullOrBlank()
+                                            }
+
+                                            if (permitirIngreso) {
+                                                cantidades[index] = newValue
+                                                listaItems[index] = listaItems[index].copy(cantidad = newValue)
+                                                Log.d("*MAKITA*", "Cantidad actualizada para ${listaItems[index].item}: $newValue")
+                                            } else {
+                                                Toast.makeText(context, "Debe enviar primero la cantidad anterior", Toast.LENGTH_SHORT).show()
+                                                cantidades[index] = ""
+                                                listaItems[index] = listaItems[index].copy(cantidad = "")
+                                            }
+                                        }
+
                                         if (newValue.all { it.isDigit() } && newValue.length <= 4) {
                                             cantidades[index] = newValue
                                             listaItems[index] = listaItems[index].copy(cantidad = newValue)
-                                            Log.d("*MAKITA*", "Cantidad actualizada para ${listaItems[index].item}: ${listaItems[index].cantidad}")
+
+                                            Log.d("*MAKITA*111*", "Cantidad actualizada para ${listaItems[index].item}: ${listaItems[index].cantidad}")
+
                                         }
-                                    },
+                                    }
+
+                                    ,
                                     placeholder = { Text("Cantidad") },
                                     keyboardOptions = KeyboardOptions.Default.copy(
                                         keyboardType = KeyboardType.Number,
@@ -2866,7 +3072,91 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                     singleLine = true
                                 )
 
-                                /*CANTIDAD*/
+                                /*FIN CANTIDAD*/
+
+                                // ENVIO DE A UNO DESPUES DE CONTAR boton enviar individual
+                                /*CUARTA*/
+
+                                Button(
+                                    onClick = {
+                                        if (listaItems[index].cantidad.isEmpty()) {
+                                            Toast.makeText(context, "Error: Ingrese la cantidad del item", Toast.LENGTH_SHORT).show()
+                                            return@Button
+                                        }
+
+                                        CoroutineScope(Dispatchers.Main).launch {
+                                            try {
+                                                val ubicacionValida: String = listaItems[index].ubicacion?.takeIf { it.isNotEmpty() } ?: ""
+
+                                                val requestRegistroReconteo = RegistraReconteoRequest(
+                                                    Id = "1",
+                                                    Empresa = "MAKITA",
+                                                    Agno = gyear.toString(),
+                                                    Mes = gmonth.toString(),
+                                                    FechaInventario = gFechaInventario,
+                                                    TipoInventario = "RECONTEO",
+                                                    NumeroReconteo = listaItems[index].numeroreconteo,
+                                                    NumeroLocal = gLocal,
+                                                    GrupoBodega = gGrupoBodega,
+                                                    Clasif1 = listaItems[index].tipoitem,
+                                                    Ubicacion = ubicacionValida,
+                                                    Item = listaItems[index].item,
+                                                    Cantidad = listaItems[index].cantidad,
+                                                    Estado = "Ingresado",
+                                                    Usuario = gUsuario,
+                                                    NombreDispositivo = gnombreDispositivo
+                                                )
+
+                                                val response = withContext(Dispatchers.IO) {
+                                                    apiService.insertarReconteo(requestRegistroReconteo)
+                                                }
+
+                                                if (response.isSuccessful) {
+
+                                                    grabacionExitosa = true
+                                                    guardarRespaldoReconteo(context, requestRegistroReconteo, gFechaInventario)
+                                                    itemGrabado = listaItems[index].item
+                                                    listaItems.removeAt(index)
+                                                    cantidades.remove(index)
+
+                                                    delay(800)
+
+                                                } else {
+                                                    val mensaje = "Error al enviar ${listaItems[index].item}: ${response.errorBody()?.string()}"
+                                                    Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+                                                    listaItems.removeAt(index)
+                                                }
+                                            } catch (e: Exception) {
+                                                val mensaje = e.message ?: "Error desconocido al enviar ${listaItems[index].item}"
+                                                Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    enabled = botonGrabar,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF00909E),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .width(140.dp)
+                                        .height(43.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Enviar",
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+
+
+
+
+
 
                             }
                         }
@@ -2874,6 +3164,26 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                         /*HASTA AQUI LAZY*/
 
 
+
+
+                    }
+
+
+                    if (grabacionExitosa) {
+                        LaunchedEffect(Unit) {
+                            delay(2000)
+                            grabacionExitosa = false
+                        }
+                        AlertDialog(
+                            onDismissRequest = { grabacionExitosa = false },
+                            confirmButton = {
+                                TextButton(onClick = { grabacionExitosa = false }) {
+                                    Text("Aceptar")
+                                }
+                            },
+                            title = { Text("Grabado Conteo Normal") },
+                            text = { Text("Item $itemGrabado grabado de forma correcta.") }
+                        )
                     }
 
 
@@ -2892,29 +3202,6 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                 .padding(10.dp),  // Margen alrededor de la fila
                             horizontalArrangement = Arrangement.SpaceBetween // Espacia los botones entre sí
                         ) {
-                            Button(
-                                onClick = { navController.popBackStack() },
-                                enabled = botonVolver,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF00909E),
-                                    contentColor = Color.White
-                                ),
-
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    .width(108.dp)
-                                    .height(43.dp)
-                                , shape = RoundedCornerShape(8.dp)
-                            ) {  Icon(
-                                imageVector = Icons.Filled.ArrowBackIosNew,
-                                contentDescription = "Volver",
-                                tint = Color.White
-                            )
-
-                                Spacer(modifier = Modifier.width(4.dp))
-
-                            }
-
 
 
                             Button(
@@ -2932,7 +3219,7 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                 ),
                                 modifier = Modifier
                                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    .width(108.dp)
+                                    .width(140.dp)
                                     .height(43.dp),
                                 shape = RoundedCornerShape(8.dp),
                             ) {
@@ -2944,7 +3231,40 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                 Text(
                                     text = "Limpiar",
                                     color = Color.White,
-                                    fontSize = 15.sp,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+
+
+                            }
+
+
+                            Button(
+                                onClick = {
+                                    navController.navigate("sexta_screen/$param/$param2/$param3/$param4/$param5")
+
+                                },
+
+                                enabled = botonVer,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF00909E),
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .width(140.dp)
+                                    .height(43.dp),
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ReceiptLong,
+                                    contentDescription = "Ver lo ingresado",
+                                    tint = Color.White
+                                )
+                                Text(
+                                    text = "Ver",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
 
@@ -2956,8 +3276,11 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
 
 
 
-                            // ACA GRABAR
 
+
+
+                            // ACA GRABAR
+                            /*
                             Button(
 
                                 onClick = {
@@ -3114,7 +3437,7 @@ fun CuartaScreen(navController: NavController, param: String, param2: String, pa
                                     modifier = Modifier.padding(top = 8.dp)
                                 )
                             }
-
+*/
                             ///
 
                         }
@@ -3160,6 +3483,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
 
     var showItemDialog by remember { mutableStateOf(false) }
+
     var selectedItemTexto by remember { mutableStateOf("") }
 
     var showUbicacionDialog by remember { mutableStateOf(false) }
@@ -3172,6 +3496,13 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
     var mostrarAdvertencia by remember { mutableStateOf(false) }
     var showErrorDialog5 by remember { mutableStateOf(false) }
     var grabacionExitosa by remember { mutableStateOf(false) }
+    var itemGrabado by remember { mutableStateOf("") }
+    var valorPreconteo by remember { mutableStateOf(0) }
+    var botonVer by remember { mutableStateOf(true) }
+    var totalitem by remember { mutableStateOf(0) }
+
+
+
 
 
 
@@ -3192,7 +3523,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
         val gyear = ObtenerAno(gFechaInventario)
         val gmonth =  ObtenerMes(gFechaInventario)
 
-
+        //Log.d("*MAKITA*111*", "PASA OBTENER*quinta")
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -3210,18 +3541,18 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
 
 
-            LaunchedEffect(gyear, gmonth, gLocal, gTipoItem, gUsuario, gGrupoBodega) {
+            LaunchedEffect(gFechaInventario,gLocal, gTipoItem, gUsuario, gGrupoBodega) {
 
                 try {
 
 
                     val resultado = apiService.obtenerReconteo99(
-                        "MAKITA", gyear.toString(), gmonth.toString(), "RECONTEO", gLocal, gTipoItem, gUsuario,gGrupoBodega
+                        "MAKITA", gyear.toString(), gmonth.toString(),gFechaInventario,"RECONTEO", gLocal, gTipoItem, gUsuario,gGrupoBodega
                     )
 
-                    val cantidadItems = resultado.size
+                    Log.d("*MAKITA*111*", "PASA por obtenerReconteo99")
 
-                    Log.d("*MAKITA*111*", "Cantidad actualizada para ${cantidadItems}")
+                    val cantidadItems = resultado.size
 
 
                     respuesta55  = resultado
@@ -3237,6 +3568,9 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                             cantidad = ""
                         )
                     })
+
+
+
 
 
                     botonVolver  = true
@@ -3256,7 +3590,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                     showErrorDialog5 =  true
 
 
-                    val mensaje3 = "No tiene asignados reconteos verifique con Supervisor su actividad. Usuario:  ${gUsuario} "
+                    val mensaje3 = "Verifique con Supervisor su actividad o fecha de inventario incorrecta. Usuario:  ${gUsuario} Inventario ${gFechaInventario} "
                    //  mostrarDialogo(context, "Error",mensaje3)
                    // Toast.makeText(context, mensaje3, Toast.LENGTH_SHORT).show()
 
@@ -3267,15 +3601,10 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
             if (showErrorDialog5) {
                 mostrarDialogo(
                     titulo = "Informacion",
-                    mensaje =  "No tiene reconteos asignados verifique con Supervisor su actividad. Usuario:  ${gUsuario} ",
+                    mensaje =  "No tiene conteos asignados verifique con Supervisor o revise la fecha de inventario. Usuario:  ${gUsuario} fecha:${gFechaInventario}",
                     onDismiss = { showErrorDialog5 = false }
                 )
             }
-
-
-
-
-
 
 
             val headers = listOf("Nro","Item", "Ubicacion", "Cantidad")
@@ -3299,10 +3628,12 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
             //aqui el box
 
-            Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            Box(modifier = Modifier
+                 .horizontalScroll(rememberScrollState())
+                .height(900.dp)
+            ) {
                 Column {
                     // Crear las cabeceras en una fila fija
-
 
 
                     Row(modifier = Modifier.fillMaxWidth(),
@@ -3323,7 +3654,9 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
 
                     val cantidades = remember { mutableStateMapOf<Int, String>() }
+                    val enviados = remember { mutableStateMapOf<Int, Boolean>() }
 
+                    totalitem = listaItems.size
 
                     LazyColumn(
                         modifier = Modifier
@@ -3354,10 +3687,14 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                     .background(rowColor)
                                     .clickable {
 
-                                        if (item.ubicacion.isNullOrBlank())
+                                        Log.d("*MAKITA*111*", "pasa clickable  1 quinta para ${item.item} ${index} ")
+
+                                        if ( item.ubicacion == "SUBICA" )
                                         {
                                             indexSeleccionado = index
                                             showUbicacionDialog = true
+                                          // Toast.makeText(context, "Permitido para los sin ubicacion", Toast.LENGTH_SHORT).show()
+                                          // showItemDialog = true
                                         }
                                         else
                                         {
@@ -3365,14 +3702,8 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                             selectedItemTexto = """ ítem: ${item.item} 
                                                          //       Codigo: ${item.tipoitem}
                                                          //       Ubicación: ${item.ubicacion} """.trimIndent()
-                                            showItemDialog = true
-                                            //mostrarDialogo4(context, "Detalles", selectedItemTexto)
-                                            // mostrarDialogo4(
-                                            //    titulo = "Info",
-                                             //   mensaje = "Este es un mensaje personalizado",
-                                             //   onDismiss = { mostrarDialogo4Activo = false }
-                                            //)
-                                            Toast.makeText(context, selectedItemTexto, Toast.LENGTH_SHORT).show()
+                                           // showItemDialog = true
+                                           // Toast.makeText(context, selectedItemTexto, Toast.LENGTH_SHORT).show()
 
                                         }
                                     }
@@ -3393,7 +3724,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                 )
 
                                 // Mostrar los campos de la respuesta (TipoItem, Item, Ubicacion)
-                                fields.forEachIndexed { index, field ->
+                                fields.forEachIndexed { fieldIndex, field ->
                                     /*
                                     if (index == 1) {
 
@@ -3421,10 +3752,10 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
 
 
-                                    if (index > 1)
+                                    if (fieldIndex > 1)
                                     {
 
-                                        val textColor = if (index == 3) Color.Blue
+                                        val textColor = if (fieldIndex == 3) Color.Blue
                                         else Color.Black
 
                                         Text(
@@ -3435,9 +3766,15 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                                 .padding(horizontal = 2.dp)
                                                 .padding(vertical = 5.dp)
                                                 .clickable {
-                                                    if (index == 2) {
+                                                    if (fieldIndex == 2) {
                                                         selectedItemTexto = item.item  // o cualquier campo que quieras mostrar
-                                                        showItemDialog = true
+                                                        Log.d("*MAKITA*111*", "pasa clickable  2 quinta para ${item.item} ${index} ")
+                                                        if ( item.ubicacion == "SUBICA" ) {
+                                                            indexSeleccionado = index
+                                                            showUbicacionDialog = true
+                                                            Log.d("*MAKITA*111*", "pasa clickable 1 quinta para ${indexSeleccionado} ")
+
+                                                        }
                                                        // mostrarDialogo4(context, "Item", selectedItemTexto)
 
                                                     }
@@ -3456,9 +3793,29 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                 TextField(
                                     value = cantidad,
                                     onValueChange = { newValue ->
-                                        // if (newValue.all { it.isDigit() } && newValue.length <= 4) {
-                                        //     cantidades[index] = newValue
-                                        // }
+
+                                        val anteriorIndex = index - 1
+
+                                        if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                            // Si es el primer ítem o el ítem anterior ya fue enviado (ya no está en la lista)
+                                            val permitirIngreso = if (index == 0) {
+                                                true
+                                            } else {
+                                                val anteriorItem = listaItems.getOrNull(anteriorIndex)
+                                                anteriorItem == null || !anteriorItem.cantidad.isNullOrBlank()
+                                            }
+
+                                            if (permitirIngreso) {
+                                                cantidades[index] = newValue
+                                                listaItems[index] = listaItems[index].copy(cantidad = newValue)
+                                                Log.d("*MAKITA*", "Cantidad actualizada para ${listaItems[index].item}: $newValue")
+                                            } else {
+                                                Toast.makeText(context, "Debe enviar por el orden definido ", Toast.LENGTH_SHORT).show()
+                                                cantidades[index] = ""
+                                                listaItems[index] = listaItems[index].copy(cantidad = "")
+                                            }
+                                        }
+
                                         if (newValue.all { it.isDigit() } && newValue.length <= 4) {
                                             cantidades[index] = newValue
                                             listaItems[index] = listaItems[index].copy(cantidad = newValue)
@@ -3478,7 +3835,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                         /*  .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))*/
                                         .padding(horizontal = 2.dp),
                                     textStyle = TextStyle(
-                                        fontSize = 18.sp,
+                                        fontSize = 20.sp,
                                         color = Color.Red,
                                         fontFamily = FontFamily.Serif,
                                         fontWeight = FontWeight.Bold
@@ -3503,7 +3860,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                             }
 
                                             CoroutineScope(Dispatchers.Main).launch {
-                                                 grabacionExitosa = true
+
 
                                                 // ya no esta dentro del foreach... si no que por linea
 
@@ -3540,12 +3897,13 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                                                 NombreDispositivo = gnombreDispositivo
                                                             )
 
-                                                            Log.d("*MAKITA*", "Datos enviados en requestRegistroInventario: $requestRegistroInventario")
+                                                            Log.d("*MAKITA*111*", "Datos enviados en requestRegistroInventario: $requestRegistroInventario")
 
                                                             val bitacoraRegistroUbi = apiService.insertarinventario(requestRegistroInventario)
 
                                                             if (bitacoraRegistroUbi.isSuccessful) {
 
+                                                                enviados[index] = true
 
                                                                 val requestRegistroReconteo = RegistraReconteoRequest(
                                                                     Id = "1",
@@ -3566,19 +3924,43 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                                                     NombreDispositivo = gnombreDispositivo
                                                                 )
 
-                                                                apiService.updateReconteo99(requestRegistroReconteo)
+
+
+
+                                                                try {
+                                                                    val respuestaPreconteo = withContext(Dispatchers.IO) {
+                                                                        apiService.updateReconteo99(requestRegistroReconteo)
+                                                                    }
+                                                                    Log.d("*MAKITA*111*", "Cantidad XXXXXactualizada ${respuestaPreconteo.exito}")
+
+                                                                    Log.d("*MAKITA*111*", "Respuesta del servidor: ${respuestaPreconteo.mensaje}")
+
+
+
+                                                                    if (respuestaPreconteo.exito) {
+                                                                        botonVer = true
+                                                                        Log.d("*MAKITA*111*", "Cantidad actualizada correctamente")
+                                                                    } else {
+                                                                        Log.d("*MAKITA*111*", "No se actualizó la cantidad")
+                                                                    }
+
+                                                                } catch (e: Exception) {
+                                                                    Log.e("*MAKITA*111*", "Error al obtener la ubicación", e)
+
+                                                                }
+
 
                                                                 guardarRespaldo(context,  requestRegistroInventario,gFechaInventario)
-
+                                                                grabacionExitosa = true
                                                                 val mensajee2 = "Item ${item.item} grabado exitosamente(1)."
-                                                                // mostrarDialogoMasivo(context, "Mensaje  ", mensajee2)
 
-                                                                Toast.makeText(context, mensajee2, Toast.LENGTH_SHORT).show()
 
-                                                                listaItems.remove(item)
+                                                                itemGrabado = item.item
+                                                                listaItems.removeAt(index)
+
                                                                 cantidades.remove(index)
 
-                                                                delay(1000)
+                                                               // delay(800)
 
 
 
@@ -3602,7 +3984,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                                         catch (e: Exception)
                                                         {
 
-                                                            Log.e("MAKITA*ACA*", "No Correcto catch")
+                                                            //Log.e("MAKITA*ACA*", "No Correcto catch")
                                                             grabacionExitosa = false
                                                             //Log.e("*MAKITA*", "Error de red al enviar el item ${item.item}: ${e.localizedMessage}")
 
@@ -3625,15 +4007,8 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                                     }
 
 
-
-
-
                                             }
 
-
-
-
-                                            Log.d("BOTON", "Enviar para ${item.item}")
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF00909E),
@@ -3656,28 +4031,21 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                         )
                                     }
 
-
-
-
-
-
-
-
                             }
 
 
                         }
 
 
-
-
-
-
                         /*HASTA AQUI LAZY*/
 
                     }
-
+/*paso*/
                     if (grabacionExitosa) {
+                        LaunchedEffect(Unit) {
+                            delay(2000)
+                            grabacionExitosa = false
+                        }
                         AlertDialog(
                             onDismissRequest = { grabacionExitosa = false },
                             confirmButton = {
@@ -3685,10 +4053,11 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                                     Text("Aceptar")
                                 }
                             },
-                            title = { Text("Éxito") },
-                            text = { Text("Item grabado correctamente.") }
+                            title = { Text("Grabado Conteo Bateria") },
+                            text = { Text("Item $itemGrabado grabado de forma correcta.") }
                         )
                     }
+
 
                     if (showUbicacionDialog) {
 
@@ -3704,7 +4073,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                             title = { Text("Ingrese Ubicacion") },
                             text = {
                                 Column {
-                                    Text("ITEM SIN UBICACION. INGRESE UNA UBICACION (menor a 10 caracteres):")
+                                    Text("Item sin ubicacion. INGRESE UNA UBICACION (menor a 10 caracteres):")
                                     Spacer(modifier = Modifier.height(8.dp))
                                     TextField(
                                         value = ubicacionIngresada,
@@ -3726,7 +4095,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                             },
                             confirmButton = {
                                 TextButton(onClick = {
-                                   // Log.d("*MAKITA*ACA*4*", "entra lista graba ok ${indexSeleccionado} ")
+                                    Log.d("*MAKITA*111*", "entra lista graba indice ok ${indexSeleccionado} ")
                                     if (ubicacionIngresada.isNotBlank() && indexSeleccionado >= 0)
                                     {
                                         Log.d("*MAKITA*111*", "pasa ")
@@ -3767,7 +4136,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
                     }
 
 
-
+                    /* SE COMENTA YA QUE GRABA POR LINEA... SI NO SE DESCOMENTA
 
                     Column(
                         modifier = Modifier.fillMaxSize(),  // Ajusta la columna a todo el espacio disponible
@@ -3810,9 +4179,10 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
 
 
+                           /* NO TIENE SENTIDO GRABAR AL FINAL SI SE ENVIA POR LINEA*/
 
-
-
+                           /* SE COMENTA EL BOTON LIMPIAR Y GRABAR*/
+                            /*
                             Button(
                                 onClick = {
                                     // respuesta55 = emptyList() /// limpia todo
@@ -4052,7 +4422,7 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
                                 )
                             }
-
+*/
                             ///
 
                         }
@@ -4068,14 +4438,66 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
                         // ACA TERMINA LAZY
                     }
-                }
+
+                     */
+
+
+
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            //horizontalArrangement = Arrangement.SpaceEvenly // Espaciado uniforme entre boton
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+
+
+
+                            Button(
+                                onClick = {
+                                    navController.navigate("septima_screen/$param/$param2/$param3/$param4/$param5/$totalitem")
+
+                                },
+
+                                enabled = botonVer,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF00909E),
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier
+                                    .padding(horizontal = 7.dp, vertical = 4.dp)
+                                    .width(100.dp)
+                                    .height(43.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ReceiptLong,
+                                    contentDescription = "Ver lo ingresado",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = "Ver",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+
+
+                            }
+
+                        }
+                    }
+                        }
             }
 
 
-
-
-
-            //HASTA aqui
 
 
         }
@@ -4083,6 +4505,765 @@ fun QuintaScreen(navController: NavController, param: String, param2: String, pa
 
 
 }
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun SextaScreen(navController: NavController, param: String, param2: String, param3: String, param4: String, param5: String)
+{
+    var gTipoItem by remember { mutableStateOf("") }
+    var gLocal by remember { mutableStateOf("") }
+    var gUsuario by remember { mutableStateOf("") }
+
+    var gFechaInventario by remember { mutableStateOf("") }
+    var gFechaInventario2 by remember { mutableStateOf("") }
+    var gGrupoBodega by remember { mutableStateOf("") }
+
+    var respuesta55 by remember { mutableStateOf<List<VerListadoResponse2>>(emptyList()) }
+    var errorState by remember { mutableStateOf<String?>(null) }
+    var cantidadMap by remember { mutableStateOf(mutableMapOf<String, String>()) }
+
+    val listaItems = remember { mutableStateListOf<ItemConCantidad>() }
+
+    var botonVolver  by remember { mutableStateOf(true) }
+    var botonLimpiar by remember { mutableStateOf(true) }
+    var botonGrabar  by remember { mutableStateOf(true) }
+
+    var swCargando by remember { mutableStateOf(true) }
+
+
+    var showItemDialog by remember { mutableStateOf(false) }
+
+    var selectedItemTexto by remember { mutableStateOf("") }
+
+    var showUbicacionDialog by remember { mutableStateOf(false) }
+    var ubicacionIngresada by remember { mutableStateOf("") }
+    var indexSeleccionado by remember { mutableStateOf(-1) }
+
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var showErrorDialog4 by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    var mostrarAdvertencia by remember { mutableStateOf(false) }
+    var showErrorDialog5 by remember { mutableStateOf(false) }
+    var grabacionExitosa by remember { mutableStateOf(false) }
+    var itemGrabado by remember { mutableStateOf("") }
+    var valorPreconteo by remember { mutableStateOf(0) }
+
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color( 0xFFB2EBF2)
+    ) {
+
+        gTipoItem = param ?: gTipoItem
+        gLocal = param2 ?: gLocal
+        gUsuario = param3 ?: gUsuario
+        gFechaInventario2 = param4 ?: gFechaInventario
+        gGrupoBodega = param5 ?: gGrupoBodega
+
+
+        gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
+
+
+        val gyear = ObtenerAno(gFechaInventario)
+        val gmonth =  ObtenerMes(gFechaInventario)
+
+        Log.d("*MAKITA*111*", "PASA OBTENER*sexta")
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            val context = LocalContext.current
+            val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+            val subtitulo = "$gLocal Dispositivo$gnombreDispositivo  "
+
+            TituloVerReconteo()
+            Separar()
+            Titulo3(param = gTipoItem, param2 = gLocal, param3 = gUsuario ,param4 = gFechaInventario , param5 = gnombreDispositivo )
+            Separar()
+
+
+
+            LaunchedEffect(Unit) {
+
+                try {
+
+
+                    Log.d("*MAKITA*111*", "tipo=${gTipoItem}, usuario=${gUsuario}, fecha=${gFechaInventario}, local=${gLocal}")
+
+                    val resultado = apiService.VerLoCapturadoReconteo(
+                         "RECONTEO",gTipoItem, gUsuario,gFechaInventario,gLocal
+                    )
+
+                    val cantidadItems = resultado.size
+
+                    respuesta55  = resultado
+                    swCargando   = false
+                    listaItems.clear()
+
+                    listaItems.addAll(resultado.map { item ->
+                        ItemConCantidad(
+                            tipoitem = item.Clasif1 ?: "Sin TipoItem",
+                            numeroreconteo = item.NumeroReconteo ?: "Sin Numero",
+                            item = item.Item ?: "Sin Item",
+                            ubicacion = item.Ubicacion ?: "Sin Ubicacion",
+                            cantidad = item.Cantidad ?: "Sin Cantidad",
+                        )
+                    })
+
+
+                    botonVolver  = true
+                    botonLimpiar = true
+                    botonGrabar  = true
+
+
+
+                } catch (e: Exception) {
+                    errorState = "Error al obtener Reconteos"
+
+                    botonVolver  = true
+                    botonLimpiar = false
+                    botonGrabar  = false
+                    swCargando = false
+
+                    showErrorDialog5 =  true
+
+
+                    val mensaje3 = "Verifique con Supervisor su actividad o fecha de inventario incorrecta. Usuario:  ${gUsuario} Inventario ${gFechaInventario} "
+                    //  mostrarDialogo(context, "Error",mensaje3)
+                    // Toast.makeText(context, mensaje3, Toast.LENGTH_SHORT).show()
+
+                }
+            }
+
+
+            if (showErrorDialog5) {
+                mostrarDialogo(
+                    titulo = "Informacion",
+                    mensaje =  "No hay reconteos capturados por el Usuario:  ${gUsuario}, revise la fecha de inventario:${gFechaInventario}",
+                    onDismiss = { showErrorDialog5 = false }
+                )
+            }
+
+
+
+
+            val headers = listOf("Reconteo","Item", "Ubicacion", "Cantidad")
+
+
+            val fields = listOf<(ItemConCantidad) -> String>(
+                { it.tipoitem },
+                { it.numeroreconteo },
+                { it.item },
+                { it.ubicacion },
+                { it.cantidad }
+            )
+
+            //aqui el box
+
+            Box(modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .height(900.dp)
+            ) {
+                Column {
+                    // Crear las cabeceras en una fila fija
+
+
+                    Row(modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                        headers.forEach { header ->
+                            Text(
+                                text = header,
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Blue,
+                                fontSize = 18.sp,
+                                maxLines = 1,
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+
+
+                    val cantidades = remember { mutableStateMapOf<Int, String>() }
+                    val enviados = remember { mutableStateMapOf<Int, Boolean>() }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxHeight(0.8f)
+                            .width(600.dp)
+                            .padding(top = 3.dp)
+                    ) {
+
+                        stickyHeader {
+                            Text(
+                                text = "Total ítems contadors: ${listaItems.size}",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00909E),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.LightGray)
+                                    .padding(8.dp)
+                            )
+                        }
+
+
+                        itemsIndexed(listaItems) { index, item ->
+                            val rowColor = if (index % 2 == 0) Color(0xFFF1F1F1) else Color.White
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(rowColor)
+                                    .clickable {
+
+                                        Log.d("*MAKITA*111*", "pasa clickable  1 quinta para ${item.item} ${index} ")
+
+                                        if ( item.ubicacion == "SUBICA" )
+                                        {
+                                            indexSeleccionado = index
+                                            showUbicacionDialog = true
+                                            // Toast.makeText(context, "Permitido para los sin ubicacion", Toast.LENGTH_SHORT).show()
+                                            // showItemDialog = true
+                                        }
+                                        else
+                                        {
+
+                                            selectedItemTexto = """ ítem: ${item.item} 
+                                                         //       Codigo: ${item.tipoitem}
+                                                         //       Ubicación: ${item.ubicacion} """.trimIndent()
+                                            // showItemDialog = true
+                                            // Toast.makeText(context, selectedItemTexto, Toast.LENGTH_SHORT).show()
+
+                                        }
+                                    }
+
+                                    .padding(vertical = 3.dp)
+                            )
+                            {
+
+                                /*INDICE*/
+                                Text(
+                                    text = (index + 1).toString(),
+                                    color = Color.DarkGray,
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(horizontal = 3.dp, vertical = 5.dp),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                // Mostrar los campos de la respuesta (TipoItem, Item, Ubicacion)
+                                fields.forEachIndexed { fieldIndex, field ->
+                                    /*
+                                    if (index == 1) {
+
+                                        val valorCampo = field(item)
+                                        val textColor = if (index == 3) Color.Blue
+                                        else Color.Black
+
+
+                                        Text(
+                                            text = field(item),
+                                            color = textColor,
+                                            modifier = Modifier
+                                                .width(40.dp)
+                                                .padding(horizontal = 3.dp)
+                                                .padding(vertical = 5.dp)
+                                            ,
+                                            fontSize = 17.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                    }
+
+                                    */
+
+
+
+                                    if (fieldIndex > 1)
+                                    {
+
+                                        val textColor = if (fieldIndex == 3) Color.Blue
+                                        else Color.Black
+
+                                        Text(
+                                            text = field(item),
+                                            color = textColor,
+                                            modifier = Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 2.dp)
+                                                .padding(vertical = 5.dp)
+                                                .clickable {
+                                                    if (fieldIndex == 2) {
+                                                        selectedItemTexto = item.item  // o cualquier campo que quieras mostrar
+                                                        Log.d("*MAKITA*111*", "pasa clickable  2 quinta para ${item.item} ${index} ")
+                                                        if ( item.ubicacion == "SUBICA" ) {
+                                                            indexSeleccionado = index
+                                                            showUbicacionDialog = true
+                                                            Log.d("*MAKITA*111*", "pasa clickable 1 quinta para ${indexSeleccionado} ")
+
+                                                        }
+                                                        // mostrarDialogo4(context, "Item", selectedItemTexto)
+
+                                                    }
+                                                }
+                                            ,
+                                            fontSize = 17.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                    }
+                                }
+
+
+
+
+
+
+
+                            }
+
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+
+        }
+    }
+
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun SeptimaScreen(navController: NavController, param: String, param2: String, param3: String, param4: String, param5: String
+                  ,param6: Int)
+{
+    var gTipoItem by remember { mutableStateOf("") }
+    var gLocal by remember { mutableStateOf("") }
+    var gUsuario by remember { mutableStateOf("") }
+
+    var gFechaInventario by remember { mutableStateOf("") }
+    var gFechaInventario2 by remember { mutableStateOf("") }
+    var gGrupoBodega by remember { mutableStateOf("") }
+    var gTotal by remember { mutableStateOf(0) }
+
+    var respuesta55 by remember { mutableStateOf<List<VerListadoResponse3>>(emptyList()) }
+    var errorState by remember { mutableStateOf<String?>(null) }
+    var cantidadMap by remember { mutableStateOf(mutableMapOf<String, String>()) }
+
+    val listaItems = remember { mutableStateListOf<ItemConCantidadHE>() }
+
+    var botonVolver  by remember { mutableStateOf(true) }
+    var botonLimpiar by remember { mutableStateOf(true) }
+    var botonGrabar  by remember { mutableStateOf(true) }
+
+    var swCargando by remember { mutableStateOf(true) }
+
+
+    var showItemDialog by remember { mutableStateOf(false) }
+
+    var selectedItemTexto by remember { mutableStateOf("") }
+
+    var showUbicacionDialog by remember { mutableStateOf(false) }
+    var ubicacionIngresada by remember { mutableStateOf("") }
+    var indexSeleccionado by remember { mutableStateOf(-1) }
+
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var showErrorDialog4 by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    var mostrarAdvertencia by remember { mutableStateOf(false) }
+    var showErrorDialog5 by remember { mutableStateOf(false) }
+    var grabacionExitosa by remember { mutableStateOf(false) }
+    var itemGrabado by remember { mutableStateOf("") }
+    var valorPreconteo by remember { mutableStateOf(0) }
+
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color( 0xFFFFF9C4)
+    ) {
+
+        gTipoItem = param ?: gTipoItem
+        gLocal    = param2 ?: gLocal
+        gUsuario  = param3 ?: gUsuario
+        gFechaInventario2 = param4 ?: gFechaInventario
+        gGrupoBodega = param5 ?: gGrupoBodega
+        gTotal  = param6
+
+
+        gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
+
+
+        val gyear = ObtenerAno(gFechaInventario)
+        val gmonth =  ObtenerMes(gFechaInventario)
+
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            val context = LocalContext.current
+            val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+            val subtitulo = "$gLocal Dispositivo$gnombreDispositivo  "
+
+            TituloVerconteo()
+            Separar()
+            Titulo3(param = gTipoItem, param2 = gLocal, param3 = gUsuario ,param4 = gFechaInventario , param5 = gnombreDispositivo )
+            Separar()
+
+
+
+
+
+            LaunchedEffect(Unit) {
+
+                try {
+
+
+                    Log.d("*MAKITA*111*", "tipo=${gTipoItem}, usuario=${gUsuario}, fecha=${gFechaInventario}, local=${gLocal}")
+
+                    val resultado = apiService.VerLoCapturado(
+                        "INVENTARIO",gTipoItem, gUsuario,gFechaInventario,gLocal
+                    )
+
+                    val cantidadItems = resultado.size
+
+                    respuesta55  = resultado
+                    swCargando   = false
+                    listaItems.clear()
+
+                    listaItems.addAll(resultado.map { item ->
+                        ItemConCantidadHE(
+                            tipoitem = item.Clasif1 ?: "Sin TipoItem",
+                            numeroreconteo = item.NumeroReconteo ?: "Sin Numero",
+                            item = item.Item ?: "Sin Item",
+                            ubicacion = item.Ubicacion ?: "Sin Ubicacion",
+                            cantidad = item.Cantidad ?: "Sin Cantidad",
+                            fechainventario = item.FechaInventario ?: "Sin Fecha",
+                        )
+                    })
+
+
+                    botonVolver  = true
+                    botonLimpiar = true
+                    botonGrabar  = true
+
+
+
+                } catch (e: Exception) {
+                    errorState = "Error al obtener Inventario"
+
+                    botonVolver  = true
+                    botonLimpiar = false
+                    botonGrabar  = false
+                    swCargando = false
+
+                    showErrorDialog5 =  true
+
+
+                    val mensaje3 = "Verifique con Supervisor su actividad o fecha de inventario incorrecta. Usuario:  ${gUsuario} Inventario ${gFechaInventario} "
+                    //  mostrarDialogo(context, "Error",mensaje3)
+                    // Toast.makeText(context, mensaje3, Toast.LENGTH_SHORT).show()
+
+                }
+            }
+
+
+            if (showErrorDialog5) {
+                mostrarDialogo(
+                    titulo = "Informacion",
+                    mensaje =  "No hay conteos realizados por  ${gUsuario}, revise la fecha de inventario:${gFechaInventario}",
+                    onDismiss = { showErrorDialog5 = false }
+                )
+            }
+
+
+            val headers = listOf("Item", "Ubicacion", "Cantidad","Fecha")
+
+
+            val fields = listOf<(ItemConCantidadHE) -> String>(
+                { it.tipoitem },
+                { it.numeroreconteo },
+                { it.item },
+                { it.ubicacion },
+                { it.cantidad },
+                { it.fechainventario }
+
+            )
+
+            //aqui el box
+
+            Box(modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .height(900.dp)
+            ) {
+                Column {
+
+                    val contados = listaItems.size
+
+                    if (gTotal.toFloat() > 0)
+                    {
+
+                    val porce = (contados.toFloat() * 100f) / (gTotal.toFloat() + contados.toFloat())
+
+                    Log.d("*MAKITA*111*", "pasa clickable  1 quinta para ${porce}  ")
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularGrafico(
+                            porcentaje = porce,
+                            titulo = "Avance Conteo"
+                        )
+                    }
+                    }
+
+
+                    Row(modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                        headers.forEach { header ->
+                            Text(
+                                text = header,
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Blue,
+                                fontSize = 18.sp,
+                                maxLines = 1,
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+
+
+                    //val cantidades = remember { mutableStateMapOf<Int, String>() }
+                    //val enviados   = remember { mutableStateMapOf<Int, Boolean>() }
+
+
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxHeight(0.8f)
+                            .width(600.dp)
+                            .padding(top = 3.dp)
+                    ) {
+
+                        stickyHeader {
+                            Text(
+                                text = "Total ítems contadors: ${listaItems.size}",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00909E),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.LightGray)
+                                    .padding(8.dp)
+                            )
+                        }
+
+
+
+
+
+                        itemsIndexed(listaItems) { index, item ->
+                            val rowColor = if (index % 2 == 0) Color(0xFFF1F1F1) else Color.White
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(rowColor)
+                                    .clickable {
+
+                                        Log.d("*MAKITA*111*", "pasa clickable  1 quinta para ${item.item} ${index} ")
+
+                                        if ( item.ubicacion == "SUBICA" )
+                                        {
+                                            indexSeleccionado = index
+                                            showUbicacionDialog = true
+                                            // Toast.makeText(context, "Permitido para los sin ubicacion", Toast.LENGTH_SHORT).show()
+                                            // showItemDialog = true
+                                        }
+                                        else
+                                        {
+
+                                            selectedItemTexto = """ ítem: ${item.item} 
+                                                         //       Codigo: ${item.tipoitem}
+                                                         //       Ubicación: ${item.ubicacion} """.trimIndent()
+                                            // showItemDialog = true
+                                            // Toast.makeText(context, selectedItemTexto, Toast.LENGTH_SHORT).show()
+
+                                        }
+                                    }
+
+                                    .padding(vertical = 3.dp)
+                            )
+                            {
+
+                                /*INDICE*/
+                                Text(
+                                    text = (index + 1).toString(),
+                                    color = Color.DarkGray,
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .padding(horizontal = 3.dp, vertical = 5.dp),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                // Mostrar los campos de la respuesta (TipoItem, Item, Ubicacion)
+                                fields.forEachIndexed { fieldIndex, field ->
+                                    /*
+                                    if (index == 1) {
+
+                                        val valorCampo = field(item)
+                                        val textColor = if (index == 3) Color.Blue
+                                        else Color.Black
+
+
+                                        Text(
+                                            text = field(item),
+                                            color = textColor,
+                                            modifier = Modifier
+                                                .width(40.dp)
+                                                .padding(horizontal = 3.dp)
+                                                .padding(vertical = 5.dp)
+                                            ,
+                                            fontSize = 17.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                    }
+
+                                    */
+
+
+
+                                    if (fieldIndex > 1)
+                                    {
+
+                                        val textColor = if (fieldIndex == 3) Color.Blue
+                                        else Color.Black
+
+                                        Text(
+                                            text = field(item),
+                                            color = textColor,
+                                            modifier = Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 2.dp)
+                                                .padding(vertical = 5.dp)
+
+                                            ,
+                                            fontSize = 17.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                    }
+                                }
+
+
+                            }
+
+
+                        }
+
+
+                    }
+
+
+
+                }
+
+
+
+
+            }
+
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+    }
+
+
+}
+
+
+@Composable
+fun CircularGrafico(
+    porcentaje: Float, // de 0.0f a 1.0f
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFF2196F3),
+    titulo: String = "Progreso"
+) {
+
+    val porcentajeNormalizado = porcentaje.coerceIn(0f, 100f) / 100f
+
+    Text(
+        text = titulo,
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Medium,
+        color = Color.DarkGray,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+
+    Box(
+        modifier = modifier
+            .size(100.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawArc(
+                color = color.copy(alpha = 0.3f),
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(20f, cap = StrokeCap.Round)
+            )
+            drawArc(
+                color = color,
+                startAngle = -90f,
+                sweepAngle = 360f * porcentajeNormalizado,
+                useCenter = false,
+                style = Stroke(20f, cap = StrokeCap.Round)
+            )
+        }
+        Text(
+            text = "${String.format("%.2f%%", porcentaje )}",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
 
 
 @Composable
@@ -4160,6 +5341,43 @@ fun TituloReconteoBAT() {
         )
     }
 }
+
+@Composable
+fun TituloVerReconteo() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+    ) {
+        Text(
+            text = "INFORME DE RECONTEOS POR USUARIO",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.Center),
+            color = Color(0xFF00909E)
+        )
+    }
+}
+
+@Composable
+fun TituloVerconteo() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+    ) {
+        Text(
+            text = "ITEMS CAPTURADOS POR USUARIO",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.Center),
+            color = Color(0xFF00909E)
+        )
+    }
+}
+
 
 @Composable
 fun Separar(){
