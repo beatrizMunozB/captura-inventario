@@ -200,11 +200,11 @@ data class ItemConCantidadHE(
 interface ApiService
 {
 
-    @GET("http://172.16.1.206:3024/api/obtener-ubicacion/{item}")
+    @GET("api/obtener-ubicacion/{item}")
     suspend fun obtenerUbicacionItem(@Path("item") item: String) : List<ItemResponse>
 
 
-    @GET("http://172.16.1.206:3024/api/consultar-asignacion-filtro/{capturador}/{mes}/{periodo}")
+    @GET("api/consultar-asignacion-filtro/{capturador}/{mes}/{periodo}")
     suspend fun obtenerUsuario(
          @Path("capturador") capturador: String
         ,@Path("mes") mes: String
