@@ -1,15 +1,53 @@
+# Archivos de configuración del proyecto Android
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
 /captures
 .externalNativeBuild
 .cxx
+.DS_Store
+
+# Archivos y carpetas de configuración de Android Studio
+.idea/
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/libraries
+.idea/gradle.xml
+.idea/vcs.xml
+
+# Archivos de compilación
+/build/
+*/build/
+
+# Archivos generados por Compose
+.kotlinc/
+.kotlin_module
+
+# Archivos de empaquetado
+*.apk
+*.ap_
+*.dex
+
+# Archivos de firma
+*.jks
+*.keystore
+
+# Archivos del sistema
+*.log
+*.hprof
+Thumbs.db
+
+# Dispositivos virtuales
+*.avd/
+
+# Configuración de editores
+.vscode/
+
+# Ignorar duplicados innecesarios
 local.properties
