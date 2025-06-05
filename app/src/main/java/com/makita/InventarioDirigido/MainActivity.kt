@@ -1,3 +1,4 @@
+
 package com.makita.InventarioDirigido
 
 import android.annotation.SuppressLint
@@ -125,6 +126,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Calendar
@@ -532,14 +534,17 @@ fun MainScreen(navController: NavController) {
                 }
             )
 
+
+
+
             ComboBoxGrupoBodega(
                 selectedOption = selectedBodega,
                 onOptionSelected = { selectedBodega = it }, local = selectedLocal.take(2)
             )
 
-            Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedBodega")
-            Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedBodega")
-            Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedLocal")
+          //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedTipo")
+          //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedBodega")
+          //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedLocal")
 
 
             if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && selectedBodega == "2") {
@@ -1299,21 +1304,35 @@ fun SecondScreen(
                 onValueChange = { newText ->
                     text = newText
 
-                    // Procesar los datos según la longitud del texto
-                    if (newText.length >= 20) {
-                        extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
-                        extractedText2 =
-                            newText.substring(20, newText.length.coerceAtMost(29)) // Serie desde
-                        extractedText3 =
-                            newText.substring(29, newText.length.coerceAtMost(38)) // Serie hasta
-                        extractedText4 =
-                            newText.substring(39, newText.length.coerceAtMost(52)) // EAN
-                    } else {
-                        extractedText = newText
+
+                    try {
+                        if (newText.length > 20) {
+                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText2 = newText.substring(20, newText.length.coerceAtMost(29)) // Serie desde
+                            extractedText3 = newText.substring(29, newText.length.coerceAtMost(38)) // Serie hasta
+                            extractedText4 = newText.substring(39, newText.length.coerceAtMost(52)) // EAN
+                        } else {
+                            // Cuando el texto es menor o igual a 20 caracteres
+                            Log.d("*MAKITA*111*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
+
+                            extractedText = newText.substring(0, newText.length.coerceAtMost(19))
+                            extractedText2 = ""
+                            extractedText3 = ""
+                            extractedText4 = ""
+                        }
+                    } catch (e: Exception) {
+                        Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
+
+                        extractedText = ""
                         extractedText2 = ""
                         extractedText3 = ""
                         extractedText4 = ""
+                        Toast.makeText(context, "Largo de etiqueta incorrecta (${newText.length})", Toast.LENGTH_SHORT).show()
                     }
+
+
+
+
 
                     if (newText.length >= 20) {
                         keyboardController?.hide() // Ocultar teclado
@@ -3512,12 +3531,14 @@ fun QuintaScreen(
                                                         item.ubicacion?.takeIf { it.isNotEmpty() }
                                                             ?: ""
 
+                                                    val FechaFija = formatoFechaSS(System.currentTimeMillis())
+
 
                                                     val requestRegistroInventario =
                                                         RegistraInventarioRequest(
                                                             Id = "1",
                                                             Empresa = "MAKITA",
-                                                            FechaInventario = gFechaInventario,
+                                                            FechaInventario = FechaFija,
                                                             TipoInventario = "INVENTARIO",
                                                             Bodega = gLocal,
                                                             Clasif1 = item.tipoitem,
@@ -4266,7 +4287,7 @@ fun SeptimaScreen(
             }
 
 
-            val headers = listOf("Item", "Ubicacion", "Cantidad", "Fecha")
+            val headers = listOf("Nro","Item       ", "Ubicacion ", "Cantidad  ", "Fecha Captura")
 
 
             val fields = listOf<(ItemConCantidadHE) -> String>(
@@ -4344,7 +4365,7 @@ fun SeptimaScreen(
 
                         stickyHeader {
                             Text(
-                                text = "Total ítems contadors: ${listaItems.size}",
+                                text = "Total ítems contados: ${listaItems.size}",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF00909E),
@@ -4398,18 +4419,51 @@ fun SeptimaScreen(
                                     fontWeight = FontWeight.Bold
                                 )
 
+
+
+
                                 // Mostrar los campos de la respuesta (TipoItem, Item, Ubicacion)
                                 fields.forEachIndexed { fieldIndex, field ->
                                     if (fieldIndex > 1) {
 
+
+                                        val fechaIndex = 7
+
+
+                                        val displayText = if (fieldIndex == fechaIndex) {
+
+                                            val parsed = runCatching {
+                                                LocalDateTime.parse(
+                                                    field(item),
+                                                    DateTimeFormatter.ISO_DATE_TIME
+                                                )
+                                            }.getOrNull()
+
+
+                                            parsed?.format(
+                                                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                                            ) ?: field(item)
+                                        } else {
+                                            field(item)
+                                        }
+
+                                        Log.d(
+                                            "*MAKITA*111*",
+                                            "pasa clickable  1 quinta para ${displayText} ${fieldIndex} "
+                                        )
+
+
                                         val textColor = if (fieldIndex == 3) Color.Blue
                                         else Color.Black
 
+                                        val anchoVar = if (fieldIndex == 5) 220.dp
+                                        else 120.dp
+
                                         Text(
-                                            text = field(item),
+                                            text = displayText,
                                             color = textColor,
                                             modifier = Modifier
-                                                .width(120.dp)
+                                                .width(anchoVar)
                                                 .padding(horizontal = 2.dp)
                                                 .padding(vertical = 5.dp),
                                             fontSize = 17.sp,
