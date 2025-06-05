@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -101,6 +102,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -1129,6 +1131,7 @@ fun SecondScreen(
     var extractedText3 by remember { mutableStateOf("") }
     var extractedText4 by remember { mutableStateOf("") }
     var response by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
+    var responseStock by rememberSaveable { mutableStateOf<List<ItemStockResponse>>(emptyList()) }
     var errorState by rememberSaveable { mutableStateOf<String?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var textFieldValue2 by remember { mutableStateOf("") }
@@ -1137,24 +1140,19 @@ fun SecondScreen(
     var cantidad by remember { mutableStateOf("") }
     val apiService = RetrofitClient.apiService
     val keyboardController = LocalSoftwareKeyboardController.current
-
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal by remember { mutableStateOf("") }
     var gusuarioasigando by remember { mutableStateOf("") }
     var gFechaInventario by remember { mutableStateOf("") }
     var gFechaInventario2 by remember { mutableStateOf("") }
     var gGrupoBodega by remember { mutableStateOf("") }
-
-
     val scrollState = rememberScrollState()
-
     var ultimaubicacion by remember { mutableStateOf("") }
     var mensajeError2 by remember { mutableStateOf("") }
     var mensajeError by remember { mutableStateOf("") }
     var botonVer by remember { mutableStateOf(true) }
-
     var isLoading by remember { mutableStateOf(false) } // Estado para el loading
-
+    var secondTextFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue())}
     fun validarCampos(): Boolean {
         return cantidad.isNotEmpty()
     }
@@ -1169,12 +1167,29 @@ fun SecondScreen(
         gusuarioasigando = param3 ?: gusuarioasigando
         gFechaInventario2 = param4 ?: gFechaInventario
         gGrupoBodega = param5 ?: gGrupoBodega
-
         gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
-
-
         textFieldValue2 = "" // Descripcion
 
+        suspend fun buscarStockManual(textoManual : String){
+            extractedText = textoManual
+            try {
+                val stock = apiService.consultarStock(textoManual)
+                Log.d("*MAKITA*", "RespuestaManual :  : $stock")
+                if (stock.isEmpty()) {
+                    // Si la respuesta está vacía, asignamos un mensaje de error
+                   Log.d("*MAKITA*", "Respuesta :  : $stock")
+                    responseStock = emptyList() // Aseguramos que la respuesta esté vacía
+                } else {
+                    responseStock = stock
+                    extractedText2 = stock[0].Descripcion
+
+
+                }
+            } catch (e: Exception) {
+
+                e.printStackTrace()
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -1346,15 +1361,14 @@ fun SecondScreen(
                 ),
                 modifier = Modifier
                     .width(300.dp)
-                    .height(120.dp)
+                    .height(90.dp)
                     .focusRequester(itemFocusRequester) // Asociar FocusRequester
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
                             keyboardController?.hide()
                         }
-                    }
-                    .padding(bottom = 16.dp),
-                maxLines = 5,
+                    },
+                maxLines = 2,
                 singleLine = false,
                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = "Icono de edición") },
                 trailingIcon = {
@@ -1364,6 +1378,49 @@ fun SecondScreen(
                         }
                     }
                 }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            OutlinedTextField(
+                value = secondTextFieldValue, // Variable para el estado del nuevo TextField
+                onValueChange = { newValue ->
+                    val upperCaseValue = newValue.text.uppercase().take(20)
+                    secondTextFieldValue = newValue.copy(text = upperCaseValue)
+
+                },
+                modifier = Modifier
+                    .width(300.dp)
+                    .height(60.dp),
+                label = {
+                    Text(
+                        "Ingreso Manual", // Cambia el texto del label según lo necesario
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+
+                        )
+                    )
+                },
+                enabled = true, // El campo está habilitado para escritura por teclado
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text // Mostrar teclado de texto
+                ),
+
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow, // Icono de "Play"
+                        contentDescription = "Acción de enviar",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    buscarStockManual(secondTextFieldValue.text)
+                                }
+                            },
+
+                    )
+                },
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -1792,6 +1849,7 @@ fun SecondScreen(
                                         textFieldValue2 = ""
                                         cantidad = ""
                                         response = emptyList()
+                                        secondTextFieldValue = TextFieldValue("")
                                         ubicacionFocusRequester.requestFocus()
                                     }
                                 }
@@ -1989,13 +2047,10 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
     var extractedText2 by remember { mutableStateOf("") }
     var extractedText3 by remember { mutableStateOf("") }
     var extractedText4 by remember { mutableStateOf("") }
-    var response4 by rememberSaveable { mutableStateOf<List<UltimaResponse>>(emptyList()) }
-    val context = LocalContext.current
     var response by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
     var response2 by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
     var errorState by rememberSaveable { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf("") }
-    var showDialog by remember { mutableStateOf(false) }
     var textFieldValue2 by remember { mutableStateOf("") }
     var showErrorDialog by remember { mutableStateOf(false) }
     var ubicacion by remember { mutableStateOf("") }
@@ -2007,7 +2062,6 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
     var gUsuarioAsignado by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     var ultimaubicacion by remember { mutableStateOf("") }
-    var mensajeDialogo by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) } // Estado para el loadingwqeqweqwe
 
     fun validarCampos(): Boolean {
