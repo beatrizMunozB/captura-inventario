@@ -197,6 +197,16 @@ data class ItemConCantidadHE(
     var fechainventario :String
 )
 
+
+data class ItemStockResponse(
+    var TipoItem: String,
+    var Descripcion: String,
+    var Ubicacion : String,
+    var Bodega: String,
+    var StockFinal: Int
+
+)
+
 interface ApiService
 {
 
@@ -310,6 +320,9 @@ interface ApiService
         @Path("fechainventario") fechainventario: String,
         @Path("local") local: String
     ): List<VerListadoResponse2>
+
+    @GET("api/consultar-stock-item/{item}")
+    suspend fun consultarStock(@Path("item") item: String) : List<ItemStockResponse>
 
 
 
