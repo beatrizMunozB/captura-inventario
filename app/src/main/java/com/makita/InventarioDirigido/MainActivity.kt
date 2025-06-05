@@ -1685,20 +1685,25 @@ fun SecondScreen(
                             if (extractedText.isNotEmpty()) {
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
+
+                                        Log.d("INVENTARIO PRUEBA" , "001 ")
                                         val FechaFija = formatoFechaSS(System.currentTimeMillis())
                                         val Usuario = gnombreDispositivo
+                                        Log.d("INVENTARIO PRUEBA" , "002 ")
+
+                                        Log.d("INVENTARIO PRUEBA" , "FechaFija $FechaFija ")
+                                        Log.d("INVENTARIO PRUEBA" , "extractedText.trim() ${extractedText.trim()} ")
+                                        Log.d("INVENTARIO PRUEBA" , "ubicacion.trim() ${ubicacion.trim()} ")
+                                        Log.d("INVENTARIO PRUEBA" , "002 ${Usuario}" )
 
                                         val response33 = apiService.validarUbicacionProducto(
                                             FechaFija,
                                             extractedText.trim(),  //item
-                                            extractedText2.trim(), //ubicacion
+                                            ubicacion.trim(), //ubicacion
                                             Usuario
                                         )
 
-                                        Log.d(
-                                            "*MAKITA*",
-                                            "API validarUbicacionProducto: $response33"
-                                        )
+                                        Log.d("INVENTARIO PRUEBA" , "003 $response33" )
 
                                         if (!response33.isNullOrEmpty()) {
                                             errorState =
