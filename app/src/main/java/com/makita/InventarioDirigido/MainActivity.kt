@@ -593,7 +593,7 @@ fun MainScreen(navController: NavController) {
                     if (selectedOption == "INVENTARIO") {
                         if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") { // Reemplaza "specific_option" con la opción deseada
 
-                            if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega == "2") {
+                             if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega != "1") {
 
                                 Log.d(
                                     "*MAKITA*111*",
