@@ -549,7 +549,7 @@ fun MainScreen(navController: NavController) {
           //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedLocal")
 
 
-            if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && selectedBodega == "2") {
+            if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && selectedBodega != "1") {
 
                 ComboBoxCategoria(
                     selectedOption = selectedCategoria,
