@@ -544,12 +544,8 @@ fun MainScreen(navController: NavController) {
                 onOptionSelected = { selectedBodega = it }, local = selectedLocal.take(2)
             )
 
-          //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedTipo")
-          //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedBodega")
-          //  Log.d("*MAKITA*111*", "Pasa por selectedBodega: $selectedLocal")
 
-
-            if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && selectedBodega == "2") {
+            if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && selectedBodega != "1" ) {
 
                 ComboBoxCategoria(
                     selectedOption = selectedCategoria,
@@ -592,8 +588,8 @@ fun MainScreen(navController: NavController) {
 
                     if (selectedOption == "INVENTARIO") {
                         if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") { // Reemplaza "specific_option" con la opción deseada
-
-                            if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega == "2") {
+                            //  if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega == "2")
+                            if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega != "1") {
 
                                 Log.d(
                                     "*MAKITA*111*",
@@ -604,7 +600,10 @@ fun MainScreen(navController: NavController) {
 
                             } else {
                                 if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") && selectedBodega == "1") {
-                                    navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
+                                    //19-08-2025 Se cambia a Ubicacion - Item como segunda pantalla
+                                    //navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
+                                    navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
+
                                 }
                             }
 
@@ -1170,18 +1169,24 @@ fun SecondScreen(
         gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
         textFieldValue2 = "" // Descripcion
 
+
+        Log.d(
+            "*MAKITA*",
+            "INGRESA SEGUNDA"
+        )
+
         suspend fun buscarStockManual(textoManual : String){
             extractedText = textoManual
             try {
                 val stock = apiService.consultarStock(textoManual)
-                Log.d("*MAKITA*", "RespuestaManual :  : $stock")
+                Log.d("*MAKITA*", "RespuestaManualXX :  : $stock")
                 if (stock.isEmpty()) {
                     // Si la respuesta está vacía, asignamos un mensaje de error
-                   Log.d("*MAKITA*", "Respuesta :  : $stock")
+                    Log.d("*MAKITA*", "Respuesta :  : $stock")
                     responseStock = emptyList() // Aseguramos que la respuesta esté vacía
                 } else {
                     responseStock = stock
-                    extractedText2 = stock[0].Descripcion
+                    extractedText2 = stock[0].Descripcion.trim()
 
 
                 }
@@ -1254,15 +1259,15 @@ fun SecondScreen(
             OutlinedTextField(
                 value = ubicacion,
                 onValueChange = {
-                    ubicacion = it
-                    // Mover el foco al siguiente campo si se cumple la condición
+                    ubicacion = it.uppercase()
+
                     if (it.length >= 5) {
                         keyboardController?.hide()
                         itemFocusRequester.requestFocus()
                     }
                 },
-                label = { Text("Escanee Ubicación") },
-                placeholder = { Text("Ingrese la ubicación") },
+                label = { Text("ESCANEE UBICACION") },
+                placeholder = { Text("INGRESE UBICACION") },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text
                 ),
@@ -1279,7 +1284,7 @@ fun SecondScreen(
                 leadingIcon = {
                     Icon(
                         Icons.Default.LocationOn,
-                        contentDescription = "Icono de ubicación"
+                        contentDescription = "Icono de ubicacion"
                     )
                 },
                 trailingIcon = {
@@ -1289,10 +1294,10 @@ fun SecondScreen(
                         }
                     }
                 },
-                isError = ubicacion.length > 8 // Mostrar error si el texto supera 8 caracteres
+                isError = ubicacion.length > 8
             )
 
-            // Mostrar un mensaje de error opcional
+
             if (ubicacion.length > 10) {
                 mensajeError2 = "La ubicación no debe exceder los 10 caracteres"
                 // mostrarDialogo3(context, "Error", mensajeError2)
@@ -1312,6 +1317,7 @@ fun SecondScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
             if (isLoading) {
+                Log.d("*MAKITA*", "validarTipoItem: ${gTipoItem}")
                 LoadingIndicator()
             }
             OutlinedTextField(
@@ -1319,6 +1325,12 @@ fun SecondScreen(
                 onValueChange = { newText ->
                     text = newText
 
+                    if (gTipoItem == "HERRAMIENTAS")
+                    {
+
+                        Log.d("*MAKITA*", "ITEM: ${gTipoItem}")
+                        Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${gTipoItem}")
+                        Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
 
                     try {
                         if (newText.length > 20) {
@@ -1348,14 +1360,80 @@ fun SecondScreen(
 
 
 
-
                     if (newText.length >= 20) {
                         keyboardController?.hide() // Ocultar teclado
                         cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
                     }
+
+                    }
+                    else
+                    {
+
+                        ///para ACC Y REP
+                        if (newText.length == 51) {
+                            extractedText = ""
+                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText2 =
+                                newText.substring(20, (20 + 18).coerceAtMost(newText.length))
+                            Log.d("*MAKITA*", "INGRESA A LARGO 51: $extractedText")
+                        }
+
+                        if (newText.length == 41 || newText.length == 50 || newText.length == 51 || newText.length == 52 || newText.length == 53 || newText.length == 54 || newText.length == 55 || newText.length == 56) {
+                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText2 =
+                                newText.substring(20, (20 + 18).coerceAtMost(newText.length))
+
+                        }
+
+
+                        if (newText.length == 37) {
+                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText2 =
+                                newText.substring(20, (20 + 5).coerceAtMost(newText.length))
+
+                        }
+
+
+                        if (newText.length == 41) {
+                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText2 =
+                                newText.substring(20, (20 + 8).coerceAtMost(newText.length))
+
+                        }
+
+
+                        if (newText.length == 38) {
+                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText2 =
+                                newText.substring(20, (20 + 6).coerceAtMost(newText.length))
+
+                        }
+
+                        if (newText.length == 20) {
+                            extractedText = newText.substring(0, 20).trim() // Primeros 20 caracteres (item)
+                            extractedText2 = ""
+                            extractedText3 = ""
+                            extractedText4 = ""
+                            keyboardController?.hide() // Ocultar teclado
+                            cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
+
+
+                        }
+
+
+                        if (newText.length >= 20) {
+                            keyboardController?.hide() // Ocultar teclado
+                            cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
+                        }
+
+
+
+                    }
+
+
                 },
                 label = { Text("Item") },
-                placeholder = { Text("Escanee código item") },
+                placeholder = { Text("ESCANEE ITEM") },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text
                 ),
@@ -1410,7 +1488,7 @@ fun SecondScreen(
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow, // Icono de "Play"
-                        contentDescription = "Acción de enviar",
+                        contentDescription = "Boton enviar",
                         modifier = Modifier
                             .size(24.dp)
                             .clickable {
@@ -1426,7 +1504,7 @@ fun SecondScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             TextField(
-                value = extractedText,
+                value = extractedText.trim(),
                 onValueChange = { /* No se permite la edición */ },
                 label = { Text("00 - 20") },
                 readOnly = true, // Este campo es solo de lectura
@@ -1462,7 +1540,7 @@ fun SecondScreen(
                         withContext(Dispatchers.Main) {
                             if (response35 == "NO") {
                                 Log.d(
-                                    "*MAKITA*AQUI*",
+                                    "*MAKITA*",
                                     "RESPUESTA NO - ENTRA validarTipoItem: $response35"
                                 )
 
@@ -1494,8 +1572,8 @@ fun SecondScreen(
 
                         // Reset descripción antes de obtener datos de la API
                         textFieldValue2 = ""
-
-                        val apiResponse = apiService.obtenerUbicacionItem(extractedText)
+                        // Solo para trear el nombre
+                        val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
 
                         withContext(Dispatchers.Main) {
                             if (apiResponse.isNullOrEmpty()) {
@@ -1523,7 +1601,7 @@ fun SecondScreen(
                             } else {
                                 response = apiResponse
                                 if (response.isNotEmpty()) {
-                                    textFieldValue2 = response.first().descripcion
+                                    textFieldValue2 = response.first().descripcion.trim()
                                 }
                             }
                         }
@@ -1562,7 +1640,7 @@ fun SecondScreen(
             }
 
             if (response.isNotEmpty()) {
-                textFieldValue2 = response.first().descripcion
+                textFieldValue2 = response.first().descripcion.trim()
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1746,12 +1824,12 @@ fun SecondScreen(
                                         Log.d("INVENTARIO PRUEBA" , "001 ")
                                         val FechaFija = formatoFechaSS(System.currentTimeMillis())
                                         val Usuario = gnombreDispositivo
-                                        Log.d("INVENTARIO PRUEBA" , "002 ")
+                                        Log.d("MAKITA" , "002 ")
 
-                                        Log.d("INVENTARIO PRUEBA" , "FechaFija $FechaFija ")
-                                        Log.d("INVENTARIO PRUEBA" , "extractedText.trim() ${extractedText.trim()} ")
-                                        Log.d("INVENTARIO PRUEBA" , "ubicacion.trim() ${ubicacion.trim()} ")
-                                        Log.d("INVENTARIO PRUEBA" , "002 ${Usuario}" )
+                                        Log.d("MAKITA" , "FechaFija $FechaFija ")
+                                        Log.d("MAKITA" , "extractedText.trim() ${extractedText.trim()} ")
+                                        Log.d("MAKITA" , "ubicacion.trim() ${ubicacion.trim()} ")
+                                        Log.d("MAKITA" , "002 ${Usuario}" )
 
                                         val response33 = apiService.validarUbicacionProducto(
                                             FechaFija,
@@ -1760,7 +1838,7 @@ fun SecondScreen(
                                             Usuario
                                         )
 
-                                        Log.d("INVENTARIO PRUEBA" , "003 $response33" )
+                                        Log.d("MAKITA" , "003 $response33" )
 
                                         if (!response33.isNullOrEmpty()) {
                                             errorState =
@@ -1902,7 +1980,7 @@ fun LoadingIndicator() {
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing)
+            animation = tween(durationMillis = 600, easing = LinearEasing)
         )
     )
 
@@ -1922,7 +2000,7 @@ fun LoadingIndicator() {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Cargando...",
+            text = "Grabando informacion...",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Red,
