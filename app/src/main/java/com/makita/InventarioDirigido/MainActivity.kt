@@ -1654,6 +1654,7 @@ fun SecondScreen(
                                     // Enfocar nuevamente el campo
                                     itemFocusRequester.requestFocus()
                                 } else {
+                                    //AQUI ME CONDOREE
                                     response = apiResponse
                                     if (response.isNotEmpty()) {
                                         textFieldValue2 = response.first().descripcion.trim()
