@@ -408,6 +408,14 @@ fun MainScreen(navController: NavController) {
 
         ) {
 
+            Text(
+                text = "Version SAP 3.0.0",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
             Image(
                 painter = painterResource(id = R.drawable.makitarojosmall),
                 contentDescription = "Makita Inventario",
@@ -416,6 +424,11 @@ fun MainScreen(navController: NavController) {
                     .align(Alignment.Start) // Alineación hacia la izquierda
                     .padding(top = 0.dp)
             )
+
+
+
+
+
             var fechaSeleccionada by rememberSaveable { mutableStateOf("") }
             DatePickerWithTextField(
                 selectedDate = fechaSeleccionada,
@@ -606,6 +619,7 @@ fun MainScreen(navController: NavController) {
 
                                 }
                             }
+
 
                         } else {
                             navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
@@ -1152,6 +1166,9 @@ fun SecondScreen(
     var botonVer by remember { mutableStateOf(true) }
     var isLoading by remember { mutableStateOf(false) } // Estado para el loading
     var secondTextFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue())}
+    var response35: String
+    var escaneoItem by remember { mutableStateOf(false) }
+
     fun validarCampos(): Boolean {
         return cantidad.isNotEmpty()
     }
@@ -1169,11 +1186,8 @@ fun SecondScreen(
         gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
         textFieldValue2 = "" // Descripcion
 
+        ////ACA PARTE
 
-        Log.d(
-            "*MAKITA*",
-            "INGRESA SEGUNDA"
-        )
 
         suspend fun buscarStockManual(textoManual : String){
             extractedText = textoManual
@@ -1212,6 +1226,7 @@ fun SecondScreen(
             Spacer(modifier = Modifier.height(12.dp))
             LaunchedEffect(Unit) {
                 try {
+
                     val respuesta = apiService.obtenerUltimaUbicacion(
                         "INVENTARIO",
                         gTipoItem,
@@ -1219,6 +1234,8 @@ fun SecondScreen(
                         formatoFechaSS(System.currentTimeMillis()),
                         gLocal
                     )
+
+                    Log.e("*MAKITA*", "leee la API obtenerUltimaUbicacion")
 
                     if (respuesta.isNotEmpty()) {
                         withContext(Dispatchers.Main) { // Asegura que se actualiza en el hilo principal
@@ -1228,7 +1245,7 @@ fun SecondScreen(
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("ErrorAPI", "Error al obtener la ubicación", e)
+                    Log.e("*MAKITA*", "Error al obtener la ubicación", e)
                 }
             }
 
@@ -1266,8 +1283,8 @@ fun SecondScreen(
                         itemFocusRequester.requestFocus()
                     }
                 },
-                label = { Text("ESCANEE UBICACION") },
-                placeholder = { Text("INGRESE UBICACION") },
+                label = { Text("Escanear Ubicacion") },
+                placeholder = { Text("Escanear Ubicacion") },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text
                 ),
@@ -1317,9 +1334,10 @@ fun SecondScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
             if (isLoading) {
-                Log.d("*MAKITA*", "validarTipoItem: ${gTipoItem}")
+                Log.d("*MAKITA*", " pasa a is loading ubicacion : ${ubicacion}")
                 LoadingIndicator()
             }
+
             OutlinedTextField(
                 value = text,
                 onValueChange = { newText ->
@@ -1328,26 +1346,38 @@ fun SecondScreen(
                     if (gTipoItem == "HERRAMIENTAS")
                     {
 
-                        Log.d("*MAKITA*", "ITEM: ${gTipoItem}")
-                        Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${gTipoItem}")
-                        Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
-
                     try {
+
+                        Log.d("*MAKITA*111*", "LARGO ENTRA validarTipoItem: ${newText.length}")
+
                         if (newText.length > 20) {
                             extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
                             extractedText2 = newText.substring(20, newText.length.coerceAtMost(29)) // Serie desde
                             extractedText3 = newText.substring(29, newText.length.coerceAtMost(38)) // Serie hasta
                             extractedText4 = newText.substring(39, newText.length.coerceAtMost(52)) // EAN
-                        } else {
+
+                            Log.d("*MAKITA*", "PASA validarTipoItem: ${extractedText}")
+                        }
+                        else
+                        {
+                            // AQUI HAY
                             // Cuando el texto es menor o igual a 20 caracteres
-                            Log.d("*MAKITA*111*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
+                            //
+                            Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
 
                             extractedText = newText.substring(0, newText.length.coerceAtMost(19))
                             extractedText2 = ""
                             extractedText3 = ""
                             extractedText4 = ""
+                            //
+                            //extractedText = newText // Guardamos lo que sea...
+                            //extractedText2 = ""
+                            //extractedText3 = ""
+                            //extractedText4 = ""
+
                         }
-                    } catch (e: Exception) {
+                    } catch (e: Exception)
+                    {
                         Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
 
                         extractedText = ""
@@ -1355,8 +1385,17 @@ fun SecondScreen(
                         extractedText3 = ""
                         extractedText4 = ""
                         Toast.makeText(context, "Largo de etiqueta incorrecta (${newText.length})", Toast.LENGTH_SHORT).show()
-                    }
 
+                        //Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
+
+                        ///extractedText = newText // Guardamos al menos el texto escaneado
+                        //extractedText2 = ""
+                        //extractedText3 = ""
+                        //extractedText4 = ""
+
+                        //toast.makeText(context, "Error procesando la etiqueta (${newText.length})", Toast.LENGTH_SHORT).show()
+
+                    }
 
 
 
@@ -1372,40 +1411,36 @@ fun SecondScreen(
                         ///para ACC Y REP
                         if (newText.length == 51) {
                             extractedText = ""
-                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText = newText.substring(0, 20).trim() // Primeros 20 caracteres (item)
                             extractedText2 =
-                                newText.substring(20, (20 + 18).coerceAtMost(newText.length))
+                                newText.substring(20, (20 + 18).coerceAtMost(newText.length)).trim()
                             Log.d("*MAKITA*", "INGRESA A LARGO 51: $extractedText")
                         }
 
                         if (newText.length == 41 || newText.length == 50 || newText.length == 51 || newText.length == 52 || newText.length == 53 || newText.length == 54 || newText.length == 55 || newText.length == 56) {
-                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
-                            extractedText2 =
-                                newText.substring(20, (20 + 18).coerceAtMost(newText.length))
-
+                            extractedText  = newText.substring(0, 20).trim() // Primeros 20 caracteres (item)
+                            extractedText2 = newText.substring(20, (20 + 18).coerceAtMost(newText.length)).trim()
                         }
 
-
                         if (newText.length == 37) {
-                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText = newText.substring(0, 20).trim() // Primeros 20 caracteres (item)
                             extractedText2 =
-                                newText.substring(20, (20 + 5).coerceAtMost(newText.length))
-
+                                newText.substring(20, (20 + 5).coerceAtMost(newText.length)).trim()
                         }
 
 
                         if (newText.length == 41) {
-                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText = newText.substring(0, 20).trim()  // Primeros 20 caracteres (item)
                             extractedText2 =
-                                newText.substring(20, (20 + 8).coerceAtMost(newText.length))
+                                newText.substring(20, (20 + 8).coerceAtMost(newText.length)).trim()
 
                         }
 
 
                         if (newText.length == 38) {
-                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText = newText.substring(0, 20).trim() // Primeros 20 caracteres (item)
                             extractedText2 =
-                                newText.substring(20, (20 + 6).coerceAtMost(newText.length))
+                                newText.substring(20, (20 + 6).coerceAtMost(newText.length)).trim()
 
                         }
 
@@ -1416,7 +1451,6 @@ fun SecondScreen(
                             extractedText4 = ""
                             keyboardController?.hide() // Ocultar teclado
                             cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
-
 
                         }
 
@@ -1433,7 +1467,7 @@ fun SecondScreen(
 
                 },
                 label = { Text("Item") },
-                placeholder = { Text("ESCANEE ITEM") },
+                placeholder = { Text("Escanear Item") },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text
                 ),
@@ -1523,7 +1557,8 @@ fun SecondScreen(
 
 
             LaunchedEffect(extractedText) {
-                if (extractedText.isNullOrEmpty()) {
+
+                if (extractedText.isNullOrEmpty() || extractedText == "999999-9")  {
                     Toast.makeText(context, "Seleccione Nueva Ubicación", Toast.LENGTH_SHORT).show()
                     return@LaunchedEffect
                 }
@@ -1533,99 +1568,122 @@ fun SecondScreen(
                     return@LaunchedEffect
                 }
 
+
+
                 CoroutineScope(Dispatchers.IO).launch {
-                    try {
 
-                        val response35 = apiService.validarTipoItem(extractedText.trim(), gTipoItem)
-                        withContext(Dispatchers.Main) {
-                            if (response35 == "NO") {
-                                Log.d(
-                                    "*MAKITA*",
-                                    "RESPUESTA NO - ENTRA validarTipoItem: $response35"
-                                )
 
-                                textFieldValue2 = ""
-                                mensajeError =
-                                    "Item: ${extractedText.trim()} NO CORRESPONDE A $gTipoItem"
-                                Log.d(
-                                    "*MAKITA*AQUI*",
-                                    "NO ENTRA API validarTipoItem: $mensajeError"
-                                )
+                    if ( extractedText.isNullOrBlank() && secondTextFieldValue.text.isNullOrBlank() ) {
+                        extractedText = "999999-9"
+                        cantidad = if (cantidad.isBlank()) "0" else cantidad
+                    }
+                    else {
 
-                                showDialog = true
 
-                                // Limpiar valores
-                                text = ""
-                                ubicacion = ""
-                                extractedText = ""
-                                extractedText2 = ""
-                                extractedText3 = ""
-                                extractedText4 = ""
-                                cantidad = ""
-                                response = emptyList()
+                        try {
 
-                                // Enfocar el campo nuevamente
-                                itemFocusRequester.requestFocus()
-                                return@withContext  // 🔥 Detiene ejecución si response35 es "NO"
-                            }
-                        }
+                            Log.d(
+                                "*MAKITA**",
+                                "INGRESO DE TODAS FORMAS: $extractedText"
+                            )
 
-                        // Reset descripción antes de obtener datos de la API
-                        textFieldValue2 = ""
-                        // Solo para trear el nombre
-                        val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
-
-                        withContext(Dispatchers.Main) {
-                            if (apiResponse.isNullOrEmpty()) {
-                                errorState = "No se encontraron datos para el item proporcionado"
-                                return@withContext
-                            }
-
-                            errorState = null
-                            val tieneValoresNulos = apiResponse.any { it.item == null }
-
-                            if (tieneValoresNulos) {
-                                Log.d("*MAKITA*", "La respuesta contiene valores nulos")
-                                showErrorDialog = true
-
-                                // Limpiar valores
-                                text = ""
-                                extractedText2 = ""
-                                extractedText3 = ""
-                                extractedText4 = ""
-                                textFieldValue2 = ""
-                                response = emptyList()
-
-                                // Enfocar nuevamente el campo
-                                itemFocusRequester.requestFocus()
+                            if (extractedText == "999999-9") {
+                                response35 = "SI"
                             } else {
-                                response = apiResponse
-                                if (response.isNotEmpty()) {
-                                    textFieldValue2 = response.first().descripcion.trim()
+                                response35 = apiService.validarTipoItem(extractedText.trim(), gTipoItem)
+                            }
+
+
+
+
+                            withContext(Dispatchers.Main) {
+                                if (response35 == "NO") {
+
+                                    textFieldValue2 = ""
+                                    mensajeError =
+                                        "Item: ${extractedText.trim()} NO CORRESPONDE A $gTipoItem"
+                                    Log.d(
+                                        "*MAKITA*AQUI*",
+                                        "NO ENTRA API validarTipoItem: $mensajeError"
+                                    )
+
+                                    showDialog = true
+
+                                    // Limpiar valores
+                                    text = ""
+                                    ubicacion = ""
+                                    extractedText = ""
+                                    extractedText2 = ""
+                                    extractedText3 = ""
+                                    extractedText4 = ""
+                                    cantidad = ""
+                                    response = emptyList()
+
+                                    // Enfocar el campo nuevamente
+                                    itemFocusRequester.requestFocus()
+                                    return@withContext  // 🔥 Detiene ejecución si response35 es "NO"
                                 }
                             }
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Log.e("*MAKITA*", "Error obteniendo datos: ${e.message}")
-                            Toast.makeText(
-                                context,
-                                "Error al obtener los datos, revise WiFi: ${e.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            showErrorDialog = true
 
-                            // Limpiar valores en caso de error
-                            text = ""
-                            extractedText2 = ""
-                            extractedText3 = ""
-                            extractedText4 = ""
+                            // Reset descripción antes de obtener datos de la API
                             textFieldValue2 = ""
-                            response = emptyList()
+                            // Solo para trear el nombre
+                            val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
 
-                            // Esperar antes de reenfocar el campo
-                            delay(3000)
-                            itemFocusRequester.requestFocus()
+                            withContext(Dispatchers.Main) {
+                                if (apiResponse.isNullOrEmpty()) {
+                                    errorState = "No se encontraron datos para el item proporcionado"
+                                    return@withContext
+                                }
+
+                                errorState = null
+                                val tieneValoresNulos = apiResponse.any { it.item == null }
+
+                                if (tieneValoresNulos) {
+                                    Log.d("*MAKITA*", "La respuesta contiene valores nulos")
+                                    showErrorDialog = true
+
+                                    // Limpiar valores
+                                    text = ""
+                                    extractedText2 = ""
+                                    extractedText3 = ""
+                                    extractedText4 = ""
+                                    textFieldValue2 = ""
+                                    response = emptyList()
+
+                                    // Enfocar nuevamente el campo
+                                    itemFocusRequester.requestFocus()
+                                } else {
+                                    response = apiResponse
+                                    if (response.isNotEmpty()) {
+                                        textFieldValue2 = response.first().descripcion.trim()
+                                    }
+
+
+                                }
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Log.e("*MAKITA*", "Error obteniendo datos: ${e.message}")
+                                Toast.makeText(
+                                    context,
+                                    "Error al obtener los datos, revise WiFi: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                showErrorDialog = true
+
+                                // Limpiar valores en caso de error
+                                text = ""
+                                extractedText2 = ""
+                                extractedText3 = ""
+                                extractedText4 = ""
+                                textFieldValue2 = ""
+                                response = emptyList()
+
+                                // Esperar antes de reenfocar el campo
+                                delay(3000)
+                                itemFocusRequester.requestFocus()
+                            }
                         }
                     }
                 }
@@ -1642,6 +1700,7 @@ fun SecondScreen(
             if (response.isNotEmpty()) {
                 textFieldValue2 = response.first().descripcion.trim()
             }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -1816,7 +1875,15 @@ fun SecondScreen(
 
                     Button(
                         onClick = {
+                            Log.d("*MAKITA*" , "ingresa a grabar  ${extractedText.trim()}")
                             isLoading = true
+
+                            if (extractedText.isNullOrBlank()) {
+                                    Log.d("*MAKITA*" , "ingresa a grabar2 isNullOrBlank  ${extractedText.trim()}")
+                                    extractedText = "999999-9"
+                                    cantidad = if (cantidad.isBlank()) "0" else cantidad
+                            }
+
                             if (extractedText.isNotEmpty()) {
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
@@ -1824,12 +1891,18 @@ fun SecondScreen(
                                         Log.d("INVENTARIO PRUEBA" , "001 ")
                                         val FechaFija = formatoFechaSS(System.currentTimeMillis())
                                         val Usuario = gnombreDispositivo
-                                        Log.d("MAKITA" , "002 ")
+                                        Log.d("*MAKITA*" , "002 ")
+                                        Log.d("*MAKITA*" , "FechaFija $FechaFija ")
+                                        Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} ")
+                                        Log.d("*MAKITA*" , "ubicacion.trim() ${ubicacion.trim()} ")
+                                        Log.d("*MAKITA*" , "002 ${Usuario}" )
 
-                                        Log.d("MAKITA" , "FechaFija $FechaFija ")
-                                        Log.d("MAKITA" , "extractedText.trim() ${extractedText.trim()} ")
-                                        Log.d("MAKITA" , "ubicacion.trim() ${ubicacion.trim()} ")
-                                        Log.d("MAKITA" , "002 ${Usuario}" )
+
+                                        if (extractedText.isNullOrBlank()) {
+                                            extractedText = "999999-9"
+                                        }
+
+                                        Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} " )
 
                                         val response33 = apiService.validarUbicacionProducto(
                                             FechaFija,
@@ -1837,8 +1910,11 @@ fun SecondScreen(
                                             ubicacion.trim(), //ubicacion
                                             Usuario
                                         )
+                                        Log.d("*MAKITA*" , "VALIDA QUE NO EXISTE ITEM EN UBICACION ")
+                                        Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} ")
+                                        Log.d("*MAKITA*" , "ubicacion.trim() ${ubicacion.trim()} ")
 
-                                        Log.d("MAKITA" , "003 $response33" )
+                                        Log.d("MAKITA*" , "003 $response33" )
 
                                         if (!response33.isNullOrEmpty()) {
                                             errorState =
@@ -2383,8 +2459,9 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
 
                                 withContext(Dispatchers.Main) {
                                     if (response35 == "NO") {
+
                                         Log.d(
-                                            "*MAKITA*AQUI*",
+                                            "*MAKITA*",
                                             "RESPUESTA NO - ENTRA validarTipoItem: $response35"
                                         )
 
