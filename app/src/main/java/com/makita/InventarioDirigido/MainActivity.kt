@@ -6,12 +6,19 @@ import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
 import android.net.ConnectivityManager
+import android.os.Build
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
+
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.widget.DatePicker
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -107,6 +114,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -121,6 +129,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Response
 import java.io.File
 import java.io.IOException
 import java.net.URLDecoder
@@ -134,6 +143,8 @@ import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -381,6 +392,8 @@ fun MainScreen(navController: NavController) {
     )
 
     val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
+    val gnombreWifi = ObtenerNombreWifi()
+
     val anioActual = LocalDate.now().year
     val mesActual = String.format("%02d", LocalDate.now().monthValue)
     var showErrorDialog by remember { mutableStateOf(false) }
@@ -390,6 +403,9 @@ fun MainScreen(navController: NavController) {
     var showErrorDialogUSU by remember { mutableStateOf(false) }
     var errorMessageUSU by remember { mutableStateOf("") }
     CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
+
+
+    AvisoWifi(gnombreWifi)
 
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -407,13 +423,15 @@ fun MainScreen(navController: NavController) {
             verticalArrangement = Arrangement.Top
 
         ) {
-
+            /* cambio de funcionalidad de reconteos y  correccion de errores */
             Text(
-                text = "Version SAP 3.0.0",
-                fontSize = 12.sp,
+                text = "Version SAP 3.0.3 (10 2025)",
+                fontSize = 13.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
+
+
 
             Spacer(modifier = Modifier.height(4.dp))
             Image(
@@ -612,7 +630,7 @@ fun MainScreen(navController: NavController) {
                                 navController.navigate("quinta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
 
                             } else {
-                                if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") && selectedBodega == "1") {
+                                if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") && (selectedBodega == "1" || selectedBodega == "3")) {
                                     //19-08-2025 Se cambia a Ubicacion - Item como segunda pantalla
                                     //navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
                                     navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
@@ -1143,8 +1161,9 @@ fun SecondScreen(
     var extractedText2 by remember { mutableStateOf("") }
     var extractedText3 by remember { mutableStateOf("") }
     var extractedText4 by remember { mutableStateOf("") }
-    var response by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
-    var responseStock by rememberSaveable { mutableStateOf<List<ItemStockResponse>>(emptyList()) }
+    var response      by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
+    var responseStock by rememberSaveable { mutableStateOf<List<ItemResponse>>(emptyList()) }
+    //var responseStock by rememberSaveable { mutableStateOf<List<ItemStockResponse>>(emptyList()) }
     var errorState by rememberSaveable { mutableStateOf<String?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var textFieldValue2 by remember { mutableStateOf("") }
@@ -1165,7 +1184,8 @@ fun SecondScreen(
     var mensajeError by remember { mutableStateOf("") }
     var botonVer by remember { mutableStateOf(true) }
     var isLoading by remember { mutableStateOf(false) } // Estado para el loading
-    var secondTextFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue())}
+   // var secondTextFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue())}
+    var secondTextFieldValue by remember { mutableStateOf("") }
     var response35: String
     var escaneoItem by remember { mutableStateOf(false) }
 
@@ -1188,20 +1208,32 @@ fun SecondScreen(
 
         ////ACA PARTE
 
+       // val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
+
+        //response = apiResponse
+        //if (response.isNotEmpty()) {
+
+          //  textFieldValue2 = response.first().descripcion.trim()
+       // }
+
+
 
         suspend fun buscarStockManual(textoManual : String){
             extractedText = textoManual
             try {
-                val stock = apiService.consultarStock(textoManual)
+                //val stock = apiService.consultarStock(textoManual)
+                val stock = apiService.obtenerUbicacionItem(textoManual.trim())
                 Log.d("*MAKITA*", "RespuestaManualXX :  : $stock")
-                if (stock.isEmpty()) {
+                if (stock.isEmpty())
+                {
                     // Si la respuesta está vacía, asignamos un mensaje de error
                     Log.d("*MAKITA*", "Respuesta :  : $stock")
                     responseStock = emptyList() // Aseguramos que la respuesta esté vacía
-                } else {
+                }
+                else
+                {
                     responseStock = stock
-                    extractedText2 = stock[0].Descripcion.trim()
-
+                    extractedText2 = stock[0].descripcion.trim()
 
                 }
             } catch (e: Exception) {
@@ -1224,6 +1256,7 @@ fun SecondScreen(
             Titulo2(param = gTipoItem, param2 = subtitulo)
             Separar()
             Spacer(modifier = Modifier.height(12.dp))
+
             LaunchedEffect(Unit) {
                 try {
 
@@ -1235,7 +1268,7 @@ fun SecondScreen(
                         gLocal
                     )
 
-                    Log.e("*MAKITA*", "leee la API obtenerUltimaUbicacion")
+                    Log.e("*MAKITA*", "lee la API obtenerUltimaUbicacion")
 
                     if (respuesta.isNotEmpty()) {
                         withContext(Dispatchers.Main) { // Asegura que se actualiza en el hilo principal
@@ -1269,6 +1302,7 @@ fun SecondScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
 
+
             LaunchedEffect(Unit) {
                 ubicacionFocusRequester.requestFocus()
             }
@@ -1278,7 +1312,8 @@ fun SecondScreen(
                 onValueChange = {
                     ubicacion = it.uppercase()
 
-                    if (it.length >= 5) {
+                    if (it.length >= 5 && it.isNotEmpty())
+                    {
                         keyboardController?.hide()
                         itemFocusRequester.requestFocus()
                     }
@@ -1343,6 +1378,9 @@ fun SecondScreen(
                 onValueChange = { newText ->
                     text = newText
 
+                    val cleanedText = newText.trim().replace("\n", "").replace("\r", "")
+                    text = cleanedText // Usamos el texto limpio
+
                     if (gTipoItem == "HERRAMIENTAS")
                     {
 
@@ -1351,7 +1389,7 @@ fun SecondScreen(
                         Log.d("*MAKITA*111*", "LARGO ENTRA validarTipoItem: ${newText.length}")
 
                         if (newText.length > 20) {
-                            extractedText = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                            extractedText  = newText.substring(0, 20) // Primeros 20 caracteres (item)
                             extractedText2 = newText.substring(20, newText.length.coerceAtMost(29)) // Serie desde
                             extractedText3 = newText.substring(29, newText.length.coerceAtMost(38)) // Serie hasta
                             extractedText4 = newText.substring(39, newText.length.coerceAtMost(52)) // EAN
@@ -1467,7 +1505,7 @@ fun SecondScreen(
 
                 },
                 label = { Text("Item") },
-                placeholder = { Text("Escanear Item") },
+                placeholder = { Text("Escanear Etiqueta de Caja") },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text
                 ),
@@ -1497,37 +1535,53 @@ fun SecondScreen(
             OutlinedTextField(
                 value = secondTextFieldValue, // Variable para el estado del nuevo TextField
                 onValueChange = { newValue ->
-                    val upperCaseValue = newValue.text.uppercase().take(20)
-                    secondTextFieldValue = newValue.copy(text = upperCaseValue)
+                    /*val upperCaseValue = newValue.text.uppercase().take(20)
+                    secondTextFieldValue = newValue.copy(text = upperCaseValue)*/
+
+                    secondTextFieldValue = newValue.uppercase().take(20)
+
+                    if (newValue.length >= 20) {
+                        keyboardController?.hide() // Ocultar teclado
+                        cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
+                    }
 
                 },
                 modifier = Modifier
                     .width(300.dp)
-                    .height(60.dp),
-                label = {
-                    Text(
-                        "Ingreso Manual", // Cambia el texto del label según lo necesario
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
+                    .height(90.dp),
+                label = { Text("Ingreso Manual") },
+                placeholder = {  Text(
+                    "Digite el codigo del Item y luego presione el botón ▶ (Play) para validar", // Cambia el texto del label según lo necesario
+                    style = TextStyle(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
 
-                        )
-                    )
-                },
+                    )) },
+
                 enabled = true, // El campo está habilitado para escritura por teclado
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text // Mostrar teclado de texto
                 ),
-
+// manda con el icono enviar la validacion
                 trailingIcon = {
                     Icon(
-                        imageVector = Icons.Filled.PlayArrow, // Icono de "Play"
-                        contentDescription = "Boton enviar",
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Enviar",
                         modifier = Modifier
                             .size(24.dp)
                             .clickable {
                                 CoroutineScope(Dispatchers.Main).launch {
-                                    buscarStockManual(secondTextFieldValue.text)
+                                    /*buscarStockManual(secondTextFieldValue.text)*/
+                                    buscarStockManual(secondTextFieldValue)
+
+                                    if (secondTextFieldValue.isNotBlank() && extractedText.isBlank()) {
+                                        extractedText = secondTextFieldValue.trim()
+                                    }
+
+                                    keyboardController?.hide() // Ocultar teclado
+                                    cantidadFocusRequester.requestFocus()
+
                                 }
                             },
 
@@ -1538,7 +1592,12 @@ fun SecondScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             TextField(
-                value = extractedText.trim(),
+                /*value = extractedText.trim(), */
+                value = if (extractedText.isNotBlank()) {
+                    extractedText.trim()
+                } else {
+                    secondTextFieldValue.trim() // aquí toma el valor de upperCaseValue
+                },
                 onValueChange = { /* No se permite la edición */ },
                 label = { Text("00 - 20") },
                 readOnly = true, // Este campo es solo de lectura
@@ -1558,8 +1617,12 @@ fun SecondScreen(
 
             LaunchedEffect(extractedText) {
 
-                if (extractedText.isNullOrEmpty() || extractedText == "999999-9")  {
-                    Toast.makeText(context, "Seleccione Nueva Ubicación", Toast.LENGTH_SHORT).show()
+                //if (extractedText.isNullOrEmpty() || extractedText == "999999-9")  {
+                //    Toast.makeText(context, "Seleccione Nueva Ubicación", Toast.LENGTH_SHORT).show()
+                //    return@LaunchedEffect
+               // }
+
+                if (extractedText.isBlank()) {
                     return@LaunchedEffect
                 }
 
@@ -1571,29 +1634,39 @@ fun SecondScreen(
 
 
                 CoroutineScope(Dispatchers.IO).launch {
-
-
-                    if ( extractedText.isNullOrBlank() && secondTextFieldValue.text.isNullOrBlank() ) {
-                        extractedText = "999999-9"
-                        cantidad = if (cantidad.isBlank()) "0" else cantidad
-                    }
-                    else {
-
-
+                        var continuar = true
                         try {
 
                             Log.d(
                                 "*MAKITA**",
-                                "INGRESO DE TODAS FORMAS: $extractedText"
+                                "INGRESO DE TODAS FORMAS DESPUES DEL TRY: $extractedText"
                             )
 
+                            /*
                             if (extractedText == "999999-9") {
                                 response35 = "SI"
                             } else {
                                 response35 = apiService.validarTipoItem(extractedText.trim(), gTipoItem)
                             }
+                            */
 
+                           // si no trae datos en item o item = '999999-9' se marca en SI
 
+                            response35 = if (extractedText.isBlank() || extractedText == "999999-9") {
+                                "SI"
+                            } else {
+                                apiService.validarTipoItem(extractedText.trim(), gTipoItem)
+                            }
+
+                            Log.d(
+                                "*MAKITA*",
+                                "PASA POR LA API: $extractedText"
+                            )
+
+                            Log.d(
+                                "*MAKITA*",
+                                "VALIDACION: $response35"
+                            )
 
 
                             withContext(Dispatchers.Main) {
@@ -1601,7 +1674,7 @@ fun SecondScreen(
 
                                     textFieldValue2 = ""
                                     mensajeError =
-                                        "Item: ${extractedText.trim()} NO CORRESPONDE A $gTipoItem"
+                                        "Item: ${extractedText.trim()} NO EXISTE O NO CORRESPONDE A $gTipoItem"
                                     Log.d(
                                         "*MAKITA*AQUI*",
                                         "NO ENTRA API validarTipoItem: $mensajeError"
@@ -1616,18 +1689,33 @@ fun SecondScreen(
                                     extractedText2 = ""
                                     extractedText3 = ""
                                     extractedText4 = ""
+                                    textFieldValue2 = ""
+                                    secondTextFieldValue = ""
                                     cantidad = ""
                                     response = emptyList()
 
                                     // Enfocar el campo nuevamente
-                                    itemFocusRequester.requestFocus()
-                                    return@withContext  // 🔥 Detiene ejecución si response35 es "NO"
+                                    delay(100)
+                                    ubicacionFocusRequester.requestFocus()
+                                    //itemFocusRequester.requestFocus()
+                                    //return@withContext  // pero solo por bloque... se cambia
+
+                                    continuar = false
+                                   // return@launch
                                 }
                             }
 
-                            // Reset descripción antes de obtener datos de la API
+                            if (!continuar) return@launch
+
+                            // limpio la descripción antes de seguir la validacion
+
                             textFieldValue2 = ""
                             // Solo para trear el nombre
+                            Log.d(
+                                "*MAKITA**",
+                                "voy por la obtenerUbicacionItemI: $extractedText"
+                            )
+
                             val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
 
                             withContext(Dispatchers.Main) {
@@ -1649,14 +1737,15 @@ fun SecondScreen(
                                     extractedText3 = ""
                                     extractedText4 = ""
                                     textFieldValue2 = ""
+                                    secondTextFieldValue = ""
                                     response = emptyList()
 
-                                    // Enfocar nuevamente el campo
                                     itemFocusRequester.requestFocus()
                                 } else {
-                                    //AQUI ME CONDOREE
+
                                     response = apiResponse
                                     if (response.isNotEmpty()) {
+
                                         textFieldValue2 = response.first().descripcion.trim()
                                     }
 
@@ -1665,7 +1754,7 @@ fun SecondScreen(
                             }
                         } catch (e: Exception) {
                             withContext(Dispatchers.Main) {
-                                Log.e("*MAKITA*", "Error obteniendo datos: ${e.message}")
+//                               Log.e("*MAKITA*", "Error obteniendo datos 22222: ${e.message}")
                                 Toast.makeText(
                                     context,
                                     "Error al obtener los datos, revise WiFi: ${e.message}",
@@ -1680,13 +1769,15 @@ fun SecondScreen(
                                 extractedText4 = ""
                                 textFieldValue2 = ""
                                 response = emptyList()
+                                isLoading = false
 
                                 // Esperar antes de reenfocar el campo
-                                delay(3000)
+                                delay(1000)
                                 itemFocusRequester.requestFocus()
                             }
+
                         }
-                    }
+
                 }
             }
 
@@ -1721,12 +1812,12 @@ fun SecondScreen(
 
                     // Campo de solo lectura
                     TextField(
-                        value = textFieldValue2,
+                        value = textFieldValue2.uppercase().trim(),
                         onValueChange = {},
                         readOnly = true,
                         modifier = Modifier
-                            .width(150.dp)
-                            .height(80.dp),
+                            .width(170.dp)
+                            .height(70.dp),
                         textStyle = TextStyle(
                             fontSize = 14.sp,
                             color = Color.Red,
@@ -1746,7 +1837,15 @@ fun SecondScreen(
                             }
                         },
 
-                        placeholder = { Text("Ingrese Cantidad") },
+                        label = { Text("Cantidad") },
+
+                        placeholder = { Text(text = "Cantidad",
+                                style = TextStyle(
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Red
+                            )
+                        ) },
                         keyboardOptions = KeyboardOptions.Default.copy(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done
@@ -1758,8 +1857,8 @@ fun SecondScreen(
                         ),
                         modifier = Modifier
                             .width(150.dp)
-                            .height(80.dp)
-                            .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))
+                            .height(70.dp)
+                           // .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))
                             .focusRequester(cantidadFocusRequester),
                         textStyle = TextStyle(
                             fontSize = 24.sp,
@@ -1768,7 +1867,7 @@ fun SecondScreen(
                             fontWeight = FontWeight.Bold
                         ),
                         singleLine = true,
-                        isError = cantidad.length > 10 // Cambiado para reflejar el límite correcto
+                        isError = cantidad.length > 10 // Nuncan las cantidades exceden de 10 digitos
                     )
 
 
@@ -1852,9 +1951,11 @@ fun SecondScreen(
                             extractedText3 = ""
                             extractedText4 = ""
                             textFieldValue2 = ""
+                            secondTextFieldValue = ""
                             cantidad = ""
                             response = emptyList()
-                            itemFocusRequester.requestFocus()
+                            ubicacionFocusRequester.requestFocus()
+                           // itemFocusRequester.requestFocus()
                         },
                         colors = buttonColors,
                         modifier = Modifier
@@ -1876,20 +1977,32 @@ fun SecondScreen(
 
                     Button(
                         onClick = {
-                            Log.d("*MAKITA*" , "ingresa a grabar  ${extractedText.trim()}")
+                            Log.d("*MAKITA*" , "ingresa a grabar  ${extractedText.isBlank() }")
+                            Log.d("*MAKITA*" , "ingresa a grabar  ${secondTextFieldValue.trim()}")
+
                             isLoading = true
 
-                            if (extractedText.isNullOrBlank()) {
-                                    Log.d("*MAKITA*" , "ingresa a grabar2 isNullOrBlank  ${extractedText.trim()}")
-                                    extractedText = "999999-9"
+                            Log.d("*MAKITA*" , "ingresa a grabar2 isNullOrBlank  ${secondTextFieldValue.trim()} ${extractedText}")
+                            /*
+                            if (extractedText.isBlank() && secondTextFieldValue.isBlank() ) {
+                                    Log.d("*MAKITA*" , "ingresa a grabar2 isNullOrBlank  ${secondTextFieldValue.trim()}")
+                                  //  extractedText = "999999-9"
                                     cantidad = if (cantidad.isBlank()) "0" else cantidad
                             }
+                            */
+
+                            if (extractedText.isBlank() && secondTextFieldValue.isBlank() && cantidad == "0")
+                            {
+                                Log.d("*MAKITA*" , "SI PASA A 9999 ")
+                                extractedText = "999999-9"
+                            }
+
 
                             if (extractedText.isNotEmpty()) {
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
 
-                                        Log.d("INVENTARIO PRUEBA" , "001 ")
+                                        Log.d("*MAKITA*" , "001 ")
                                         val FechaFija = formatoFechaSS(System.currentTimeMillis())
                                         val Usuario = gnombreDispositivo
                                         Log.d("*MAKITA*" , "002 ")
@@ -1900,7 +2013,7 @@ fun SecondScreen(
 
 
                                         if (extractedText.isNullOrBlank()) {
-                                            extractedText = "999999-9"
+                                         //   extractedText = "999999-9"
                                         }
 
                                         Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} " )
@@ -1942,6 +2055,8 @@ fun SecondScreen(
                                                     "Datos enviados en requestRegistroInventario: $requestRegistroInventario"
                                                 )
 
+
+
                                                 val bitacoraRegistroUbi =
                                                     apiService.insertarinventario(
                                                         requestRegistroInventario
@@ -1951,6 +2066,12 @@ fun SecondScreen(
                                                     "*MAKITA*",
                                                     "RESPUESTA DE INSERTAR INVENTARIO: $bitacoraRegistroUbi"
                                                 )
+
+                                                if (bitacoraRegistroUbi.isSuccessful) {
+                                                    Log.d("*MAKITA*", "Registro insertado correctamente")
+                                                } else {
+                                                    Log.d("*MAKITA*", "No se insertó el registro. Código: ${bitacoraRegistroUbi.code()}, mensaje: ${bitacoraRegistroUbi.message()}")
+                                                }
 
                                                 guardarRespaldo(
                                                     context,
@@ -1985,7 +2106,7 @@ fun SecondScreen(
                                         }
 
                                     } catch (e: Exception) {
-                                        Log.e("*MAKITA*", "ERROR: ${e.message}")
+                                        Log.d("*MAKITA*", "ERROR: ${e.message}")
                                         errorState = "Error: ${e.message}"
                                         delay(1500)
                                         Toast.makeText(
@@ -2004,7 +2125,8 @@ fun SecondScreen(
                                         textFieldValue2 = ""
                                         cantidad = ""
                                         response = emptyList()
-                                        secondTextFieldValue = TextFieldValue("")
+                                        /*secondTextFieldValue = TextFieldValue("")*/
+                                        secondTextFieldValue = ""
                                         ubicacionFocusRequester.requestFocus()
                                     }
                                 }
@@ -2051,6 +2173,58 @@ fun obtenerNombreDelDispositivo(context: Context): String {
 }
 
 @Composable
+fun AvisoWifi(gnombreWifi: String) {
+    var mostrarDialogo by remember { mutableStateOf(true) }
+
+    if (mostrarDialogo) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogo = false },
+            title = { Text("Aviso") },
+            text = { Text("Su capturador esta conectado a $gnombreWifi") },
+            confirmButton = {
+                TextButton(onClick = { mostrarDialogo = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun ObtenerNombreWifi(): String {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var resultado by remember { mutableStateOf("Cargando...") }
+
+    val wifiPermiso = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.NEARBY_WIFI_DEVICES
+    } else {
+        Manifest.permission.ACCESS_FINE_LOCATION
+    }
+
+    val permisoConcedido =
+        ContextCompat.checkSelfPermission(context, wifiPermiso) == PackageManager.PERMISSION_GRANTED
+
+    val solicitarPermiso =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                resultado = obtenerDatosWifi(context)  // ahora sí existe
+            } else {
+                resultado = "Permiso denegado"
+            }
+        }
+
+    LaunchedEffect(Unit) {
+        if (permisoConcedido) {
+            resultado = obtenerDatosWifi(context)
+        } else {
+            solicitarPermiso.launch(wifiPermiso)
+        }
+    }
+
+    return resultado
+}
+
+@Composable
 fun LoadingIndicator() {
     val infiniteTransition = rememberInfiniteTransition()
     val angle by infiniteTransition.animateFloat(
@@ -2085,6 +2259,30 @@ fun LoadingIndicator() {
         )
     }
 }
+
+@SuppressLint("MissingPermission")
+fun obtenerDatosWifi(context: Context): String {
+    // 1) Nombre del dispositivo
+    val nombreDispositivo = Settings.Global.getString(
+        context.contentResolver,
+        Settings.Global.DEVICE_NAME
+    ) ?: android.os.Build.MODEL ?: "Desconocido"
+
+    // 2) SSID Wi-Fi actual
+    val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    val wifiInfo = wifiManager.connectionInfo
+    var ssid = wifiInfo?.ssid
+
+    ssid = if (ssid != null && ssid != "<unknown ssid>") {
+        ssid.replace("\"", "")
+    } else {
+        "Desconocida"
+    }
+
+    Log.e("*MAKITA*", "SSID detectada: $ssid")
+    return ssid
+}
+
 
 
 @Composable
