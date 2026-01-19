@@ -2516,7 +2516,15 @@ fun obtenerDatosWifi(context: Context): String {
         "Desconocida"
     }
 
-    Log.e("*MAKITA*", "SSID detectada: $ssid")
+    Log.d("MAKITA*WIFI_TEST", "SSID: ${wifiInfo.ssid}")
+    Log.d("MAKITA*WIFI_TEST", "BSSID: ${wifiInfo.bssid}")
+    Log.d("MAKITA*WIFI_TEST", "IP: ${wifiInfo.ipAddress}")
+
+    Log.d(
+        "*MAKITA*111*",
+        "Wifi: $ssid "
+    )
+
     return ssid
 }
 
@@ -3388,7 +3396,7 @@ fun CuartaScreen(
             }
 
 
-            val headers = listOf("Nro", "Item", "Ubicacion", "Cantidad")
+            val headers = listOf("#", "Nro", "   Item", "   Ubicacion", "     Cantidad")
             val fields = listOf<(ItemConCantidad) -> String>(
                 { it.tipoitem },
                 { it.numeroreconteo },
@@ -3414,6 +3422,7 @@ fun CuartaScreen(
                         }
                     }
                     val cantidades = remember { mutableStateMapOf<Int, String>() }
+
 
                     LazyColumn(
                         modifier = Modifier
@@ -3441,6 +3450,7 @@ fun CuartaScreen(
 
                             // 💠 Color celeste si es el ítem permitido (paso actual)
                             val fondoFila = if (index == indicePermitido) Color(0xFFD6F6FF) else rowColor
+                            val permitirTodo = listaItems.firstOrNull()?.tipoitem == "HERRAMIENTAS"
 
                             Row(
                                 modifier = Modifier
@@ -3508,7 +3518,13 @@ fun CuartaScreen(
                                 }
 
                                 val cantidad = cantidades[index] ?: ""
-                                val habilitado = index == indicePermitido
+                               // val habilitado = index == indicePermitido
+
+                                val habilitado = if (permitirTodo) {
+                                    true
+                                } else {
+                                    index == indicePermitido
+                                }
 
                                 TextField(
                                     value = cantidad,
