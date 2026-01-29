@@ -3804,12 +3804,58 @@ fun CuartaScreen(
                                                         NombreDispositivo = gnombreDispositivo
                                                     )
 
+
+
                                                 val response = withContext(Dispatchers.IO) {
                                                     apiService.insertarReconteo(requestRegistroReconteo)
                                                 }
 
                                                 if (response.isSuccessful) {
                                                     grabacionExitosa = true
+
+                                                    try {
+                                                        val respuestaPreconteo =
+                                                        withContext(Dispatchers.IO) {
+                                                            apiService.updateReconteo99(
+                                                                requestRegistroReconteo
+                                                            )
+                                                        }
+                                                        Log.d(
+                                                            "*MAKITA*111*",
+                                                            "Cantidad XXXXXactualizada ${respuestaPreconteo.exito}"
+                                                        )
+
+                                                        Log.d(
+                                                            "*MAKITA*111*",
+                                                            "Respuesta del servidor: ${respuestaPreconteo.mensaje}"
+                                                        )
+
+
+
+                                                        if (respuestaPreconteo.exito) {
+                                                            botonVer = true
+                                                            Log.d(
+                                                                "*MAKITA*111*",
+                                                                "Cantidad actualizada correctamente"
+                                                            )
+                                                        } else {
+                                                            Log.d(
+                                                                "*MAKITA*111*",
+                                                                "No se actualizó la cantidad"
+                                                            )
+                                                        }
+
+                                                    } catch (e: Exception) {
+                                                        Log.e(
+                                                            "*MAKITA*111*",
+                                                            "Error al obtener la ubicación",
+                                                            e
+                                                        )
+
+                                                    }
+
+
+
                                                     guardarRespaldoReconteo(
                                                         context,
                                                         requestRegistroReconteo,
