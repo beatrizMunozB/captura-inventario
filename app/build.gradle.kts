@@ -4,21 +4,33 @@ plugins {
 }
 
 android {
-    namespace = "com.makita.InventarioDirigido"
+    namespace = "com.makita.InventarioSucursal"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.makita.InventarioDirigido"
+        applicationId = "com.makita.InventarioSucursal"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.2"
+        versionCode = 3
+        versionName = "1.4-Sucursal"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
     }
+
+    android.applicationVariants.all {
+        outputs.all {
+            val appName = "InventarioSucursal"
+            val version = versionName
+            val buildType = buildType.name
+
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "$appName-$version-$buildType.apk"
+        }
+    }
+
 
     buildTypes {
         release {

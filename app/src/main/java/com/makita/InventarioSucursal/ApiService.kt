@@ -1,4 +1,4 @@
-package com.makita.InventarioDirigido
+package com.makita.InventarioSucursal
 
 import retrofit2.Response
 import retrofit2.http.Body
@@ -250,11 +250,12 @@ interface ApiService
         @Path("usuario") Usuario: String
     ):  String
 
-    @GET("api/insertar-inventario/{empresa}/{agno}/{mes}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
+    @GET("api/insertar-inventario/{empresa}/{agno}/{mes}/{fechainventario}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
     suspend fun obtenerReconteo(
         @Path("empresa") Empresa: String,
         @Path("agno") Agno: String,
         @Path("mes") Mes: String,
+        @Path("fechainventario") fechainventario: String,
         @Path("tipoinventario") TipoInventario: String,
         @Path("numerolocal") NumeroLocal: String,
         @Path("tipoitem") TipoItem: String,

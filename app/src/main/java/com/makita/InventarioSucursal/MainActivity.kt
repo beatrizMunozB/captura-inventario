@@ -1,5 +1,5 @@
 
-package com.makita.InventarioDirigido
+package com.makita.InventarioSucursal
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -109,7 +109,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -122,14 +121,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.makita.InventarioDirigido.RetrofitClient.apiService
-import com.makita.InventarioDirigido.ui.theme.InventarioDirigidoTheme
+import com.makita.InventarioSucursal.RetrofitClient.apiService
+import com.makita.InventarioSucursal.ui.theme.InventarioSucursalTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.Response
 import java.io.File
 import java.io.IOException
 import java.net.URLDecoder
@@ -143,24 +141,24 @@ import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.LazyColumn
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.text.format.Formatter
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import java.net.Inet4Address
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            InventarioDirigidoTheme {
+            InventarioSucursalTheme {
                 AppNavigation()
             }
         }
@@ -420,7 +418,7 @@ fun MainScreen(navController: NavController) {
     )
 
     val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
-    val gnombreWifi = ObtenerNombreWifi()
+   // val gnombreWifi = ObtenerNombreWifi()
 
     val anioActual = LocalDate.now().year
     val mesActual = String.format("%02d", LocalDate.now().monthValue)
@@ -433,7 +431,13 @@ fun MainScreen(navController: NavController) {
     CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
 
 
+    //Log.d("*MAKITA*111*", "mensaje: $gnombreWifi")
+
+    /*
     AvisoWifi(gnombreWifi)
+    */
+
+
 
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -453,7 +457,7 @@ fun MainScreen(navController: NavController) {
         ) {
             /* cambio de funcionalidad de reconteos y  correccion de errores */
             Text(
-                text = "Version SAP 3.0.3 (11 2025)",
+                text = "Version SAP 3.0.5 (01 2026)",
                 fontSize = 13.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
@@ -470,7 +474,6 @@ fun MainScreen(navController: NavController) {
                     .align(Alignment.Start) // Alineación hacia la izquierda
                     .padding(top = 0.dp)
             )
-
 
 
 
@@ -492,19 +495,27 @@ fun MainScreen(navController: NavController) {
                     }
 
                     val respuesta01 = withContext(Dispatchers.IO) {
-                        Log.d(
-                            "*MAKITA*111*",
-                            "Usuario obXXXtenido: $gnombreDispositivo $mesActual $anioActual"
-                        )
-                        apiService.obtenerUsuario(
-                            gnombreDispositivo, mesActual,
-                            anioActual.toString()
+
+                        val mensaje = "Usuario obtenido 1 : $gnombreDispositivo $mesActual $anioActual"
+                        Log.d("*MAKITA*111*", "mensaje: $mensaje")
+
+                        apiService.obtenerUsuario(gnombreDispositivo, mesActual, anioActual.toString()
 
                         )
                     }
 
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA: $respuesta01")
+                    Log.d("*MAKITA*111*", "DATA:    ${respuesta01.data}")
+                    Log.d("*MAKITA*111*", "Usuario: ${respuesta01.data?.Usuario}")
+                    Log.d("*MAKITA*111*", "Usuario: ${respuesta01.data?.Capturador}")
+
+
+
+                    //AQUI
                     val usuario = respuesta01.data?.Usuario
-                    Log.d("*MAKITA*111*", "Usuario obXXXtenido: $usuario")
+
+
+                    Log.d("*MAKITA*111*", "Usuario obXXXtenido 2 : $usuario")
 
                     if (usuario.isNullOrBlank()) {
                         // El valor es null, "" o solo espacios
@@ -519,12 +530,16 @@ fun MainScreen(navController: NavController) {
                         }
                     } else {
                         usuarioasigando = usuario
+
+                        Log.d("*MAKITA*111*", "Usuario pasa por sino  2 : $usuarioasigando $usuario")
                     }
 
                     //usuarioasigando = "BEATRIZ MUNOZ"
-                    Log.d("*MAKITA*111*", "Usuario obXXXtenido: $usuarioasigando $mesActual")
+                    //Log.d("*MAKITA*111*", "Usuario obXXXtenido 3: $usuarioasigando $mesActual")
 
-                } catch (e: IOException) {
+                }
+                /*
+                catch (e: IOException) {
 
                     showErrorDialogUSU = true
                     Toast.makeText(
@@ -532,13 +547,26 @@ fun MainScreen(navController: NavController) {
                         "⚠️ Usuario no asignado, revisar periodo",
                         Toast.LENGTH_LONG
                     ).show()
-                    Log.d("*MAKITA*111*", "Usuario obXXXtenido: $usuarioasigando")
+                    Log.d("*MAKITA*111*", "Usuario obtenido 4 CATCH: $usuarioasigando")
 //                   // mostrarDialogo(context, "Error", "Error de red: No hay conexión a Internet")
 
-                } catch (e: Exception) {
+                }*/
+                catch (e: IOException) {
+                    Log.e("*MAKITA*111*", "ERROR DE CONEXIÓN", e)
+
+                    showErrorDialogUSU = true
+                    Toast.makeText(
+                        context,
+                        "❌ No se pudo conectar al servidor",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                /*
+                catch (e: Exception) {
                     errorMessageUSU = "Usuario no definido para el periodo actual"
                     showErrorDialogUSU = true
-                }
+                }*/
+
             }
 
             TextField(
@@ -644,6 +672,10 @@ fun MainScreen(navController: NavController) {
                     val fechaFormateada = formatearFecha(selectedDate)
                     val fechaCodificada =
                         URLEncoder.encode(fechaFormateada, StandardCharsets.UTF_8.toString())
+                    Log.d(
+                        "*MAKITA*111*",
+                        "Pasa por  aqui: $selectedBodega"
+                    )
 
                     if (selectedOption == "INVENTARIO") {
                         if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") { // Reemplaza "specific_option" con la opción deseada
@@ -652,7 +684,7 @@ fun MainScreen(navController: NavController) {
 
                                 Log.d(
                                     "*MAKITA*111*",
-                                    "Pasa por selectedCategoria quinta_screen: $selectedCategoria"
+                                    "Pasa por selectedCategoria quinta_screen: $selectedCategoria  $selectedBodega"
                                 )
 
                                 navController.navigate("quinta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
@@ -1866,18 +1898,23 @@ fun SecondScreen(
                             )
 
                             ///AQUI QUEDE CON LA IDEA DE: monitorear la wifi... antes de llamar a la descripcion del item
+                            /// Solo para local 01-ENEA que hay varias wifi
 
+
+                            /*
                             val wifiActual = obtenerDatosWifi(context)
                             Log.d("*MAKITA*", "Wi-Fi actual: $wifiActual")
 
                             withContext(Dispatchers.Main) {
-                                if (wifiActual != "MCL-Bodega") {
+                                if (gLocal == "01-ENEA" && wifiActual != "MCL-Bodega") {
                                     mostrarDialogoWifi = true
                                     continuar = false
                                 }
                             }
 
                             if (!continuar) return@launch
+
+                             */
 
                             val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
 
@@ -2466,6 +2503,20 @@ fun ObtenerNombreWifi(): String {
 }
 
 @Composable
+fun obtenerIpWifi(context: Context): String {
+    val wifiManager =
+        context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+    val ipInt = wifiManager.connectionInfo.ipAddress
+
+    return if (ipInt == 0) {
+        "Sin IP"
+    } else {
+        Formatter.formatIpAddress(ipInt)
+    }
+}
+
+@Composable
 fun LoadingIndicator() {
     val infiniteTransition = rememberInfiniteTransition()
     val angle by infiniteTransition.animateFloat(
@@ -2502,8 +2553,7 @@ fun LoadingIndicator() {
 }
 
 
-
-
+/*
 @SuppressLint("MissingPermission")
 fun obtenerDatosWifi(context: Context): String {
     val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -2522,11 +2572,128 @@ fun obtenerDatosWifi(context: Context): String {
 
     Log.d(
         "*MAKITA*111*",
-        "Wifi: $ssid "
+        "obtenerDatosWifi Wifi: $ssid "
     )
 
     return ssid
 }
+
+@SuppressLint("MissingPermission")
+fun obtenerDatosWifi(context: Context): String {
+
+    val wifiManager =
+        context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+    val wifiInfo = wifiManager.connectionInfo
+
+    if (wifiInfo == null) {
+        Log.d("*MAKITA*111", "wifiInfo es NULL")
+        return "Sin conexión"
+    }
+
+    var ssid = wifiInfo.ssid
+
+    Log.d("*MAKITA*111*", "SSID RAW: $ssid")
+    Log.d("*MAKITA*111*", "BSSID: ${wifiInfo.bssid}")
+    Log.d("*MAKITA*111*", "IP: ${wifiInfo.ipAddress}")
+
+    if (ssid.isNullOrEmpty() ||
+        ssid == WifiManager.UNKNOWN_SSID ||
+        ssid == "<unknown ssid>"
+    ) {
+        return "Desconocida"
+    }
+
+    // Android entrega el SSID con comillas
+    ssid = ssid.replace("\"", "")
+
+    Log.d("*MAKITA*111", "SSID LIMPIO: $ssid")
+
+    return ssid
+}
+*/
+
+@RequiresApi(Build.VERSION_CODES.Q)
+@SuppressLint("MissingPermission")
+fun obtenerDatosWifi(context: Context): String {
+
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    val network = connectivityManager.activeNetwork ?: return "Sin conexión"
+
+    val capabilities =
+        connectivityManager.getNetworkCapabilities(network) ?: return "Sin conexión"
+
+    val wifiInfo = capabilities.transportInfo as? WifiInfo ?: return "Sin conexión"
+
+    var ssid = wifiInfo.ssid
+
+   // val ip = obtenerIpWifi2(context)
+
+    val ip = obtenerIpWifi2(context)   // 172.16.30.111
+    Log.d("*MAKITA*111*", "SSID RAW: $ip")
+
+    val ambiente = obtenerAmbientePorIp(ip)
+
+    Log.d("*MAKITA*111*", "SSID AMBIENTE: $ambiente")
+
+    //val ipTexto = ipIntToString(ip)
+
+    //Log.d("*MAKITA*111*", ipTexto)
+
+    Log.d("*MAKITA*111*", "SSID RAW: $ssid")
+    Log.d("*MAKITA*111*", "BSSID: ${wifiInfo.bssid}")
+    Log.d("*MAKITA*111*", "IP: ${wifiInfo.ipAddress}")
+
+    if (
+        ssid.isNullOrEmpty() ||
+        ssid == "<unknown ssid>" ||
+        ssid == WifiManager.UNKNOWN_SSID
+    ) {
+        //return "Desconocida" Antes ahora por IP
+        return ambiente
+    }
+
+    return ssid.replace("\"", "")
+}
+
+
+fun obtenerAmbientePorIp(ip: String): String {
+    return when {
+        ip.startsWith("172.16.30.") -> "MCL-Bodega"
+        else -> "MCL-Oficina"
+    }
+}
+
+
+fun ipIntToString(ip: Int): String {
+    return listOf(
+        ip and 0xff,
+        ip shr 8 and 0xff,
+        ip shr 16 and 0xff,
+        ip shr 24 and 0xff
+    ).joinToString(".")
+}
+
+fun obtenerIpWifi2(context: Context): String {
+
+    val cm =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    val network = cm.activeNetwork ?: return "0.0.0.0"
+
+    val linkProperties = cm.getLinkProperties(network) ?: return "0.0.0.0"
+
+    val ipv4 = linkProperties.linkAddresses
+        .map { it.address }
+        .firstOrNull { it is Inet4Address }
+        ?.hostAddress
+
+    return ipv4 ?: "0.0.0.0"
+}
+
+
 
 
 
@@ -3341,6 +3508,7 @@ fun CuartaScreen(
                         "MAKITA",
                         gyear.toString(),
                         gmonth.toString(),
+                        gFechaInventario,
                         "RECONTEO",
                         gLocal,
                         gTipoItem,
@@ -3350,6 +3518,7 @@ fun CuartaScreen(
 
                     respuesta55 = resultado
 
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $respuesta55")
                     swCargando = false
 
                     listaItems.clear()
@@ -3381,6 +3550,7 @@ fun CuartaScreen(
                     swCargando = false
 
                     showDialog = true
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $respuesta55")
                     val mensaje3 =
                         "No tiene asignados reconteos verifique con Supervisor su actividad. Usuario:  ${gUsuario} "
                 }
@@ -3388,6 +3558,7 @@ fun CuartaScreen(
 
 
             if (showDialog) {
+                Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $respuesta55")
                 mostrarDialogo(
                     titulo = "Informacion",
                     mensaje = "No tiene asignados reconteos verifique con Supervisor su actividad. Usuario:  ${gUsuario}  ",
@@ -3904,7 +4075,8 @@ fun QuintaScreen(
                         gGrupoBodega
                     )
 
-                    Log.d("*MAKITA*111*", "PASA por obtenerReconteo99")
+                    Log.d("*MAKITA*111*", "Que se cambio por la tabla reconteo $gLocal $gGrupoBodega")
+
                     Log.d("*MAKITA*111*", "Que se cambio por la tabla reconteo")
 
                     respuesta55 = resultado

@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Inventario Makita</string>
-    <string name="app_name_launcher">Inventario Normal y Baterias</string>
+    <string name="app_name">InventarioSucursal</string>
+    <string name="app_name_launcher">Inventario Items</string>
 </resources>

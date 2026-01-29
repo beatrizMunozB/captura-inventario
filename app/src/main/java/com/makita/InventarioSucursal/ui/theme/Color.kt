@@ -1,4 +1,4 @@
-package com.makita.InventarioDirigido.ui.theme
+package com.makita.InventarioSucursal.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
