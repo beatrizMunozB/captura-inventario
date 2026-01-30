@@ -4033,6 +4033,7 @@ fun QuintaScreen(
                                             showUbicacionDialog = true
                                         }
                                     }
+
                                     .padding(vertical = 3.dp)
                             ) {
                                 /* INDICE */
@@ -4145,7 +4146,7 @@ fun QuintaScreen(
                                                     Bodega = gLocal,
                                                     Clasif1 = item.tipoitem,
                                                     Ubicacion = ubicacionValida,
-                                                    Item = item.item,
+                                                    Item = item.item.trim(),
                                                     Cantidad = item.cantidad,
                                                     Estado = "Ingresado",
                                                     Usuario = gUsuario,
