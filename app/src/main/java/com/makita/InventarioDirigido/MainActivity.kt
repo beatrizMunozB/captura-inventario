@@ -7,7 +7,7 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
-import android.net.wifi.WifiInfo
+
 import android.net.wifi.WifiManager
 
 import android.Manifest
@@ -151,9 +151,11 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.media.AudioManager
 import android.media.ToneGenerator
+import androidx.annotation.RequiresPermission
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import com.makita.InventarioDirigido.R
 
 
 class MainActivity : ComponentActivity() {
@@ -167,7 +169,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
+/*
+@RequiresPermission(Manifest.permission.VIBRATE)
 fun vibrarCorto(context: Context) {
     val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     if (vibrator.hasVibrator()) {
@@ -175,6 +178,8 @@ fun vibrarCorto(context: Context) {
         vibrator.vibrate(efecto)
     }
 }
+*/
+
 
 fun beepCorto() {
     try {
@@ -452,13 +457,24 @@ fun MainScreen(navController: NavController) {
 
         ) {
             /* cambio de funcionalidad de reconteos y  correccion de errores */
-            Text(
-                text = "Version SAP 3.0.3 (11 2025)",
-                fontSize = 13.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
 
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Version 3.0.4 (11 2025)",
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = " | $gnombreWifi",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -470,8 +486,6 @@ fun MainScreen(navController: NavController) {
                     .align(Alignment.Start) // Alineación hacia la izquierda
                     .padding(top = 0.dp)
             )
-
-
 
 
 
@@ -494,14 +508,12 @@ fun MainScreen(navController: NavController) {
                     val respuesta01 = withContext(Dispatchers.IO) {
                         Log.d(
                             "*MAKITA*111*",
-                            "Usuario obXXXtenido: $gnombreDispositivo $mesActual $anioActual"
+                            "Usuario obtenido: $gnombreDispositivo $mesActual $anioActual"
                         )
-                        apiService.obtenerUsuario(
-                            gnombreDispositivo, mesActual,
-                            anioActual.toString()
-
-                        )
+                        apiService.obtenerUsuario(gnombreDispositivo, mesActual, anioActual.toString())
                     }
+
+                    Log.d("*MAKITA*111*respuesta*", respuesta01.toString())
 
                     val usuario = respuesta01.data?.Usuario
                     Log.d("*MAKITA*111*", "Usuario obXXXtenido: $usuario")
@@ -536,7 +548,9 @@ fun MainScreen(navController: NavController) {
 //                   // mostrarDialogo(context, "Error", "Error de red: No hay conexión a Internet")
 
                 } catch (e: Exception) {
-                    errorMessageUSU = "Usuario no definido para el periodo actual"
+                    errorMessageUSU = "No existe un usuario definido para el período actual.\n\n" +
+                                      "Dispositivo: $gnombreDispositivo\n" +
+                                      "Período: $mesActual / $anioActual"
                     showErrorDialogUSU = true
                 }
             }
@@ -570,7 +584,10 @@ fun MainScreen(navController: NavController) {
                 mostrarDialogo(
                     titulo = "Informacion",
                     mensaje = errorMessageUSU,
-                    onDismiss = { showErrorDialog = false }
+                    onDismiss = {
+                        showErrorDialogUSU = false   // cerrar el dialogo
+                        activity?.finish()
+                    }
                 )
             }
 
@@ -2389,6 +2406,12 @@ fun obtenerNombreDelDispositivo(context: Context): String {
 fun AvisoWifi(gnombreWifi: String) {
     var mostrarDialogo by remember { mutableStateOf(true) }
 
+
+    LaunchedEffect(Unit) {
+        delay(50000) // 3 segundos
+        mostrarDialogo = false
+    }
+
     if (mostrarDialogo) {
         AlertDialog(
             onDismissRequest = { mostrarDialogo = false },
@@ -3649,7 +3672,7 @@ fun CuartaScreen(
                                                     cantidades.remove(index)
 
                                                     beepCorto()
-                                                    vibrarCorto(context)
+                                                    //vibrarCorto(context)
 
                                                     if (listaItems.isNotEmpty()) {
                                                         indicePermitido = 0
@@ -4145,7 +4168,7 @@ fun QuintaScreen(
                                                     TipoInventario = "INVENTARIO",
                                                     Bodega = gLocal,
                                                     Clasif1 = item.tipoitem,
-                                                    Ubicacion = ubicacionValida,
+                                                    Ubicacion = ubicacionValida.trim(),
                                                     Item = item.item.trim(),
                                                     Cantidad = item.cantidad,
                                                     Estado = "Ingresado",
@@ -4158,6 +4181,67 @@ fun QuintaScreen(
 
                                                 if (bitacoraRegistroUbi.isSuccessful) {
                                                     beepCorto()
+                                                    /* AQUI FALTABA HACER EL UPDATE*/
+
+                                                    val requestRegistroReconteo =
+                                                        RegistraReconteoRequest(
+                                                            Id = "1",
+                                                            Empresa = "MAKITA",
+                                                            Agno = gyear.toString(),
+                                                            Mes = gmonth.toString(),
+                                                            FechaInventario = gFechaInventario,
+                                                            TipoInventario = "RECONTEO",
+                                                            NumeroReconteo = item.numeroreconteo,
+                                                            NumeroLocal = gLocal,
+                                                            GrupoBodega = gGrupoBodega,
+                                                            Clasif1 = item.tipoitem,
+                                                            Ubicacion = ubicacionValida.trim(),
+                                                            Item = item.item.trim(),
+                                                            Cantidad = item.cantidad,
+                                                            Estado = "Ingresado",
+                                                            Usuario = gUsuario,
+                                                            NombreDispositivo = gnombreDispositivo
+                                                        )
+
+
+                                                    try {
+
+                                                        val respuestaPreconteo =
+                                                            withContext(Dispatchers.IO) {
+                                                                apiService.updateReconteo99(
+                                                                    requestRegistroReconteo
+
+                                                                )
+                                                            }
+                                                        Log.d(
+                                                            "*MAKITA*111*",
+                                                            "Cantidad XXXXXactualizada ${respuestaPreconteo.exito}"
+                                                        )
+
+                                                        if (respuestaPreconteo.exito) {
+                                                            botonVer = true
+                                                            Log.d(
+                                                                "*MAKITA*111*",
+                                                                "Cantidad actualizada correctamente"
+                                                            )
+                                                        } else {
+                                                            Log.d(
+                                                                "*MAKITA*111*",
+                                                                "No se actualizó la cantidad"
+                                                            )
+                                                        }
+
+                                                    } catch (e: Exception) {
+                                                        Log.e(
+                                                            "*MAKITA*111*",
+                                                            "Error al obtener la ubicación",
+                                                            e
+                                                        )
+
+                                                    }
+
+
+                                                    /* HASTA AQUI*/
                                                     guardarRespaldo(context, requestRegistroInventario, gFechaInventario)
                                                     grabacionExitosa = true
                                                     itemGrabado = item.item
@@ -4168,7 +4252,7 @@ fun QuintaScreen(
                                                     // if (indicePermitido < listaItems.lastIndex) {
                                                     //    indicePermitido++
                                                     if (indicePermitido >= listaItems.size) {
-                                                        vibrarCorto(context)
+                                                        //vibrarCorto(context)
                                                         beepCorto()
                                                     }
 
