@@ -3504,6 +3504,9 @@ fun CuartaScreen(
 
                 try {
 
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $gyear.toString()")
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $gFechaInventario")
+
                     val resultado = apiService.obtenerReconteo(
                         "MAKITA",
                         gyear.toString(),
@@ -3517,6 +3520,8 @@ fun CuartaScreen(
                     )
 
                     respuesta55 = resultado
+
+
 
                     Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $respuesta55")
                     swCargando = false

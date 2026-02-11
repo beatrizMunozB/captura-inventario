@@ -11,13 +11,29 @@ android {
         applicationId = "com.makita.InventarioSucursal"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.4-Sucursal"
+        versionCode = 4
+        versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        flavorDimensions += "env"
+
+        productFlavors {
+            create("prod") {
+                dimension = "env"
+                applicationId = "com.makita.InventarioSucursal"
+                resValue("string", "app_name", "InventarioSucursal")
+            }
+            create("qa") {
+                dimension = "env"
+                applicationId = "com.makita.InventarioSucursal.qa"
+                resValue("string", "app_name", "InventarioSucursal QA")
+            }
+        }
+
+
     }
 
     android.applicationVariants.all {
