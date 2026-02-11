@@ -255,7 +255,7 @@ interface ApiService
         @Path("empresa") Empresa: String,
         @Path("agno") Agno: String,
         @Path("mes") Mes: String,
-        @Path("fechainventario") FechaInventario: String,
+        @Path("fechainventario") fechainventario: String,
         @Path("tipoinventario") TipoInventario: String,
         @Path("numerolocal") NumeroLocal: String,
         @Path("tipoitem") TipoItem: String,

@@ -3356,9 +3356,11 @@ fun CuartaScreen(
                 LoadingIndicator()
             }
 
-            LaunchedEffect(gyear, gmonth, gLocal, gTipoItem, gUsuario, gGrupoBodega) {
+            LaunchedEffect(gyear, gmonth, gFechaInventario, gLocal, gTipoItem, gUsuario, gGrupoBodega) {
 
                 try {
+
+                    Log.d("*MAKITA*111*", "pasa: $gFechaInventario")
 
                     val resultado = apiService.obtenerReconteo(
                         "MAKITA",
@@ -3372,7 +3374,7 @@ fun CuartaScreen(
                         gGrupoBodega
                     )
 
-
+                    Log.d("*MAKITA*111*", "respuesta: $resultado")
                     respuesta55 = resultado
 
                     swCargando = false
