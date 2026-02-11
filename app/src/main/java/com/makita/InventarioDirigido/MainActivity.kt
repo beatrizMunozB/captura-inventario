@@ -3364,12 +3364,14 @@ fun CuartaScreen(
                         "MAKITA",
                         gyear.toString(),
                         gmonth.toString(),
+                        gFechaInventario,
                         "RECONTEO",
                         gLocal,
                         gTipoItem,
                         gUsuario,
                         gGrupoBodega
                     )
+
 
                     respuesta55 = resultado
 

@@ -250,11 +250,12 @@ interface ApiService
         @Path("usuario") Usuario: String
     ):  String
 
-    @GET("api/insertar-inventario/{empresa}/{agno}/{mes}/{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
+    @GET("api/insertar-inventario/{empresa}/{agno}/{mes}/{fechainventario}//{tipoinventario}/{numerolocal}/{tipoitem}/{usuario}/{grupobodega}")
     suspend fun obtenerReconteo(
         @Path("empresa") Empresa: String,
         @Path("agno") Agno: String,
         @Path("mes") Mes: String,
+        @Path("fechainventario") FechaInventario: String,
         @Path("tipoinventario") TipoInventario: String,
         @Path("numerolocal") NumeroLocal: String,
         @Path("tipoitem") TipoItem: String,
