@@ -3360,7 +3360,25 @@ fun CuartaScreen(
 
                 try {
 
-                    Log.d("*MAKITA*111*", "pasa: $gFechaInventario")
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $gyear.toString()")
+                    Log.d("*MAKITA*111*", "RESPUESTA COMPLETA de obtenerReconteo: $gFechaInventario")
+
+                    Log.d(
+                        "*MAKITA*111*",
+                        """
+    obtenerReconteo(
+        Empresa = MAKITA,
+        Año = $gyear,
+        Mes = $gmonth,
+        FechaInventario = $gFechaInventario,
+        Tipo = RECONTEO,
+        Local = $gLocal,
+        TipoItem = $gTipoItem,
+        Usuario = $gUsuario,
+        GrupoBodega = $gGrupoBodega
+    )
+    """.trimIndent()
+                    )
 
                     val resultado = apiService.obtenerReconteo(
                         "MAKITA",
@@ -3374,7 +3392,6 @@ fun CuartaScreen(
                         gGrupoBodega
                     )
 
-                    Log.d("*MAKITA*111*", "respuesta: $resultado")
                     respuesta55 = resultado
 
                     swCargando = false
