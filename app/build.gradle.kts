@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId = "com.makita.InventarioDirigido"
-        minSdk = 26
+        minSdk = 27
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.3.1"
+        versionCode = 7
+        versionName = "1.3.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

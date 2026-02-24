@@ -3583,7 +3583,7 @@ fun CuartaScreen(
                                         }
 
                                         val anteriorIndex = index - 1
-                                        if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                        if (newValue.all { it.isDigit() } && newValue.length <= 10) {
                                             val permitirIngreso = if (index == 0) {
                                                 true
                                             } else {
@@ -3611,7 +3611,7 @@ fun CuartaScreen(
                                             }
                                         }
 
-                                        if (newValue.all { it.isDigit() } && newValue.length <= 4) {
+                                        if (newValue.all { it.isDigit() } && newValue.length <= 10) {
                                             cantidades[index] = newValue
                                             listaItems[index] =
                                                 listaItems[index].copy(cantidad = newValue)
