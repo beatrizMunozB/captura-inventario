@@ -151,11 +151,19 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiInfo
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import com.makita.InventarioDirigido.R
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.core.app.ActivityCompat
+import android.location.LocationManager
+import androidx.compose.ui.layout.ContentScale
 
 
 class MainActivity : ComponentActivity() {
@@ -458,25 +466,60 @@ fun MainScreen(navController: NavController) {
         ) {
             /* cambio de funcionalidad de reconteos y  correccion de errores */
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Version 3.0.4 (11 2025)",
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
+            Column(modifier = Modifier.fillMaxSize()) {
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(70.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.banner_login),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
 
-                Text(
-                    text = " | $gnombreWifi",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.35f))
+                    )
+
+                    Text(
+                        text = "Inventario",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Text(
+                        text = "Version 3.0.5 (03 2026)",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+
+                    /* Entre mas informacion tiene el usuario se confunde ... asi que se saca el nombre de la wifi donde se conecta
+
+                    Text(
+                        text = " | $gnombreWifi",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                     */
+                }
+                Spacer(modifier = Modifier.height(6.dp))
             }
 
-
+            /*
             Spacer(modifier = Modifier.height(4.dp))
             Image(
                 painter = painterResource(id = R.drawable.makitarojosmall),
@@ -486,8 +529,10 @@ fun MainScreen(navController: NavController) {
                     .align(Alignment.Start) // Alineación hacia la izquierda
                     .padding(top = 0.dp)
             )
+            */
 
 
+            Spacer(modifier = Modifier.height(8.dp))
 
             var fechaSeleccionada by rememberSaveable { mutableStateOf("") }
             DatePickerWithTextField(
@@ -564,8 +609,8 @@ fun MainScreen(navController: NavController) {
                     .width(320.dp) // Definir ancho
                     .height(60.dp),
                 textStyle = TextStyle(
-                    fontSize = 20.sp, // Tamaño del texto
-                    color = Color.Red, // Color del texto
+                    fontSize = 19.sp, // Tamaño del texto
+                    color = Color(0xFF00909E), // Color del texto
                     fontFamily = FontFamily.Serif, // Familia de fuentes
                     fontWeight = FontWeight.Bold, // Peso de la fuente
                     textAlign = TextAlign.Center
@@ -779,22 +824,22 @@ fun formatoFechaSS(timestamp: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerWithTextField(selectedDate: String, onDateSelected: (String) -> Unit) {
+
     var showDatePickerDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
+
     var selectedDate2 by remember {
         mutableStateOf(
-            if (selectedDate.isNotEmpty()) selectedDate else String.format(
-                "%02d/%02d/%d",
-                day,
-                month + 1,
-                year
-            )
+            if (selectedDate.isNotEmpty()) selectedDate
+            else String.format("%02d/%02d/%d", day, month + 1, year)
         )
     }
+
     val defaultDate = String.format("%02d/%02d/%d", day, month + 1, year)
 
     LaunchedEffect(Unit) {
@@ -807,35 +852,44 @@ fun DatePickerWithTextField(selectedDate: String, onDateSelected: (String) -> Un
         DatePickerDialog(
             context,
             { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-                val monthFormatted =
-                    String.format("%02d", selectedMonth + 1) // Asegura dos dígitos en el mes
-                val dayFormatted =
-                    String.format("%02d", selectedDayOfMonth)  // Asegura dos dígitos en el día
+
+                val monthFormatted = String.format("%02d", selectedMonth + 1)
+                val dayFormatted = String.format("%02d", selectedDayOfMonth)
+
                 selectedDate2 = "$dayFormatted/$monthFormatted/$selectedYear"
                 onDateSelected(selectedDate2)
+
             },
-            year, month, day
+            year,
+            month,
+            day
         )
     }
 
-    OutlinedTextField(
-        value = selectedDate2,
-        onValueChange = {},
+    Box(
         modifier = Modifier
             .width(320.dp)
             .height(60.dp)
             .clickable {
                 datePickerDialog.show()
-            },
-        readOnly = true,
-        label = { Text("INGRESE FECHA INVENTARIO") },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Default.CalendarToday,
-                contentDescription = "Calendario"
-            )
-        }
-    )
+            }
+    ) {
+
+        OutlinedTextField(
+            value = selectedDate2,
+            onValueChange = {},
+            readOnly = true,
+            enabled = false,
+            modifier = Modifier.fillMaxSize(),
+            label = { Text("Ingrese  FECHA INVENTARIO") },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "Calendario"
+                )
+            }
+        )
+    }
 }
 
 
@@ -868,10 +922,10 @@ fun ComboBoxWithTextField(
                     showError = false
                 },
             readOnly = true,
-            label = { Text("Seleccione Tipo de Inventario") },
+            label = { Text("Seleccione Tipo de Inventario" , fontSize = 12.sp) },
             textStyle = TextStyle(
                 color = if (selectedOption.isNotEmpty()) Color.Black else Color.Gray,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             ),
             trailingIcon = {
@@ -1006,10 +1060,10 @@ fun ComboBoxTipoProducto(
                 .background(animatedBackgroundColor, shape = RoundedCornerShape(8.dp))
                 .clickable { expanded = true },
             readOnly = true,
-            label = { Text("Seleccione Tipo de Producto") },
+            label = { Text("Seleccione Tipo de Producto", fontSize = 12.sp) },
             textStyle = TextStyle(
                 color = if (selectedOption.isNotEmpty()) Color.Black else Color.Gray,
-                fontSize = 18.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             ),
             trailingIcon = {
@@ -1076,10 +1130,10 @@ fun ComboBoxLocal(
                 .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                 .clickable { expanded = true },
             readOnly = true,
-            label = { Text("Seleccione Local") },
+            label = { Text("Seleccione Local", fontSize = 12.sp) },
             textStyle = TextStyle(
                 color = if (selectedOption.isNotEmpty()) Color.Black else Color.Gray,
-                fontSize = 18.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             ),
             trailingIcon = {
@@ -1169,7 +1223,7 @@ fun ComboBoxGrupoBodega(
                 .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                 .clickable { expanded = true },
             readOnly = true,
-            label = { Text("Seleccione Grupo de Bodega ") },
+            label = { Text("Seleccione Grupo de Bodega ", fontSize = 12.sp) },
             textStyle = TextStyle(
                 fontWeight = if (selectedOption.isNotEmpty()) FontWeight.Bold else FontWeight.Normal,
                 color = Color.Black
@@ -1193,7 +1247,7 @@ fun ComboBoxGrupoBodega(
                         Text(
                             option.NombreGrupoBodega,
                             color = if (selectedOption == option.NombreGrupoBodega) Color.Blue else Color.Blue,
-                            fontSize = 20.sp
+                            fontSize = 14.sp
                         )
 
                     },
@@ -1262,10 +1316,10 @@ fun ComboBoxCategoria(
                 .background(backgroundColor, shape = RoundedCornerShape(8.dp))
                 .clickable { expanded = true },
             readOnly = true,
-            label = { Text("Seleccione Categoria  ") },
+            label = { Text("Seleccione Categoria", fontSize = 12.sp) },
             textStyle = TextStyle(
                 color = if (selectedOption.isNotEmpty()) Color.Black else Color.Gray,
-                fontSize = 18.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             ),
             trailingIcon = {
@@ -1287,7 +1341,7 @@ fun ComboBoxCategoria(
                         Text(
                             option.Descripcion,
                             color = Color.Blue,
-                            fontSize = 20.sp
+                            fontSize = 14.sp
                         )
                     },
                     onClick = {
@@ -1351,6 +1405,8 @@ fun SecondScreen(
 
     var mostrarDialogoWifiError by remember { mutableStateOf(false) }
     var textoDialogoWifiError by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val activity = context as Activity
 
     fun validarCampos(): Boolean {
         return cantidad.isNotEmpty()
@@ -1883,8 +1939,10 @@ fun SecondScreen(
                             )
 
                             ///AQUI QUEDE CON LA IDEA DE: monitorear la wifi... antes de llamar a la descripcion del item
-
-                            val wifiActual = obtenerDatosWifi(context)
+                            // Google empezó a restringir el acceso al SSID del Wi-Fi por razones de privacidad
+                            // motivo por el cual se elimina esta validacion por los equipos de arriendo
+                            /*
+                            val wifiActual = obtenerDatosWifi(activity)
                             Log.d("*MAKITA*", "Wi-Fi actual: $wifiActual")
 
                             withContext(Dispatchers.Main) {
@@ -1893,6 +1951,8 @@ fun SecondScreen(
                                     continuar = false
                                 }
                             }
+
+                             */
 
                             if (!continuar) return@launch
 
@@ -2456,7 +2516,8 @@ fun MonitorCambioWifi() {
 
 @Composable
 fun ObtenerNombreWifi(): String {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val activity = context as Activity
     var resultado by remember { mutableStateOf("Cargando...") }
 
     val wifiPermiso = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -2465,21 +2526,27 @@ fun ObtenerNombreWifi(): String {
         Manifest.permission.ACCESS_FINE_LOCATION
     }
 
-    val permisoConcedido =
-        ContextCompat.checkSelfPermission(context, wifiPermiso) == PackageManager.PERMISSION_GRANTED
-
     val solicitarPermiso =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                resultado = obtenerDatosWifi(context)  // ahora sí existe
+            Log.e("MAKITA*PERMISO", "Callback: ${if (isGranted) "CONCEDIDO" else "DENEGADO"}")
+            resultado = if (isGranted) {
+                obtenerDatosWifi(activity)
             } else {
-                resultado = "Permiso denegado"
+                "Permiso denegado"
             }
         }
 
     LaunchedEffect(Unit) {
-        if (permisoConcedido) {
-            resultado = obtenerDatosWifi(context)
+        // ✅ Check AQUÍ, no arriba en la composición
+        val tienePermiso = ActivityCompat.checkSelfPermission(
+            activity,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        Log.e("MAKITA*PERMISO", "LaunchedEffect - FINE: ${if (tienePermiso) "CONCEDIDO" else "DENEGADO"}")
+
+        if (tienePermiso) {
+            resultado = obtenerDatosWifi(activity)
         } else {
             solicitarPermiso.launch(wifiPermiso)
         }
@@ -2487,6 +2554,7 @@ fun ObtenerNombreWifi(): String {
 
     return resultado
 }
+
 
 @Composable
 fun LoadingIndicator() {
@@ -2525,30 +2593,83 @@ fun LoadingIndicator() {
 }
 
 
-
-
 @SuppressLint("MissingPermission")
-fun obtenerDatosWifi(context: Context): String {
-    val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    val wifiInfo = wifiManager.connectionInfo
-    var ssid = wifiInfo?.ssid
+fun obtenerDatosWifi(activity: Activity): String {
 
-    ssid = if (ssid != null && ssid != "<unknown ssid>") {
+    val tienePermisoFine = ActivityCompat.checkSelfPermission(
+        activity,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val tienePermisoCoarse = ActivityCompat.checkSelfPermission(
+        activity,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    if (!tienePermisoFine && !tienePermisoCoarse) {
+        Log.e("MAKITA*WIFI", "Sin ningún permiso de ubicación")
+        return "Sin permiso ubicación"
+    }
+
+    Log.d("MAKITA*PERMISO", "Usando: ${if (tienePermisoFine) "FINE" else "COARSE"}")
+
+    val locationManager = activity.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        ?: return "Ubicación desactivada"
+
+    val gpsActivo = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    val networkActivo = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+
+    if (!gpsActivo && !networkActivo) {
+        Log.e("MAKITA*PERMISO", "Ubicación desactivada en el dispositivo")
+        return "Ubicación desactivada"
+    }
+
+    val wifiManager = activity.applicationContext
+        .getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        return obtenerSSIDAndroid12(activity)
+    }
+
+    val wifiInfo = wifiManager.connectionInfo
+    val ssid = wifiInfo?.ssid
+
+    Log.d("MAKITA*PERMISO", "SSID raw: $ssid")
+    Log.d("MAKITA*PERMISO", "BSSID: ${wifiInfo?.bssid}")
+    Log.d("MAKITA*PERMISO", "IP: ${wifiInfo?.ipAddress}")
+
+    return if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") {
         ssid.replace("\"", "")
     } else {
         "Desconocida"
     }
+}
 
-    Log.d("MAKITA*WIFI_TEST", "SSID: ${wifiInfo.ssid}")
-    Log.d("MAKITA*WIFI_TEST", "BSSID: ${wifiInfo.bssid}")
-    Log.d("MAKITA*WIFI_TEST", "IP: ${wifiInfo.ipAddress}")
 
-    Log.d(
-        "*MAKITA*111*",
-        "Wifi: $ssid "
-    )
+@RequiresApi(Build.VERSION_CODES.S)
+private fun obtenerSSIDAndroid12(context: Context): String {
+    var ssidResultado = "Desconocida"
 
-    return ssid
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE)
+            as ConnectivityManager
+
+    val network = connectivityManager.activeNetwork ?: return "Sin red"
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return "Sin capabilities"
+
+    if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+        val wifiInfo = capabilities.transportInfo as? WifiInfo
+        val ssid = wifiInfo?.ssid
+
+        Log.d("MAKITA*WIFI", "SSID Android12+: $ssid")
+
+        ssidResultado = if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") {
+            ssid.replace("\"", "")
+        } else {
+            "Desconocida"
+        }
+    }
+
+    return ssidResultado
 }
 
 
