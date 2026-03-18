@@ -48,7 +48,9 @@ data class RegistraInventarioRequest
     val Cantidad : String,
     val Estado : String,
     val Usuario : String,
-    val NombreDispositivo : String
+    val NombreDispositivo : String,
+    val GrupoBodega : String
+
  )
 
 data class RegistraReconteoRequest

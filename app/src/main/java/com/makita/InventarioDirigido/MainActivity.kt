@@ -164,6 +164,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.app.ActivityCompat
 import android.location.LocationManager
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.graphics.RectangleShape
 
 
 class MainActivity : ComponentActivity() {
@@ -226,10 +228,31 @@ fun CambiarColorBarraEstado(color: Color, darkIcons: Boolean = true) {
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "main_screen")
+
+    NavHost(navController = navController, startDestination = "primerfiltro")
     {
+        composable("primerfiltro") {
+            PrimerFiltroScreen(navController)
+        }
+/*
         composable("main_screen") {
             MainScreen(navController)
+        }
+*/
+
+        composable(
+            route = "main_screen/{tipo}",
+            arguments = listOf(
+                navArgument("tipo") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+
+            val tipo = backStackEntry.arguments?.getString("tipo") ?: "mensual"
+
+            MainScreen(
+                navController = navController,
+                tipoProceso = tipo
+            )
         }
 
         composable(
@@ -247,7 +270,7 @@ fun AppNavigation() {
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
             val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
             val param4 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam4"
-            val param5 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam5"
+            val param5 = backStackEntry.arguments?.getString("param5") ?: "DefaultParam5"
 
             SecondScreen(
                 navController = navController,
@@ -260,22 +283,26 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "third_screen/{param}/{param2}/{param3}",
+            route = "third_screen/{param}/{param2}/{param3}/{param4}",
             arguments = listOf(navArgument("param") { type = NavType.StringType },
                 navArgument("param2") { type = NavType.StringType },
-                navArgument("param3") { type = NavType.StringType }
+                navArgument("param3") { type = NavType.StringType } ,
+                navArgument("param4") { type = NavType.StringType }
             )
         ) { backStackEntry ->
 
             val param = backStackEntry.arguments?.getString("param") ?: "DefaultParam"
             val param2 = backStackEntry.arguments?.getString("param2") ?: "DefaultParam2"
             val param3 = backStackEntry.arguments?.getString("param3") ?: "DefaultParam3"
+            val param4 = backStackEntry.arguments?.getString("param4") ?: "DefaultParam4"
 
             TerceraScreen(
                 navController = navController,
                 param = param,
                 param2 = param2,
-                param3 = param3
+                param3 = param3,
+                param4 = param4
+
             )
 
         }
@@ -402,9 +429,112 @@ fun AppNavigation() {
     }
 }
 
+
+@Composable
+fun PrimerFiltroScreen(navController: NavController) {
+
+    val gnombreWifi = ObtenerNombreWifi()
+
+    CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
+
+    AvisoWifi(gnombreWifi)
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+        ) {
+
+            Image(
+                painter = painterResource(id = R.drawable.banner_login),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+            )
+
+            Text(
+                text = "Inventario",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Version 3.0.5 (03 2026)",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+
+                Text(
+                    text = " | $gnombreWifi",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            Button(
+                onClick = { navController.navigate("main_screen/general") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RectangleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF00909E),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Inventario General")
+            }
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Button(
+                onClick = { navController.navigate("main_screen/mensual") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RectangleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF00909E),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Inventario Mensual")
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(navController: NavController,  tipoProceso: String) {
 
     val calendar = Calendar.getInstance()
     val year = calendar.get(Calendar.YEAR)
@@ -413,6 +543,7 @@ fun MainScreen(navController: NavController) {
     val context = LocalContext.current
     var selectedOption by remember { mutableStateOf("") } // Estado global
     var selectedTipo by remember { mutableStateOf("") } // Estado global
+    var selectedTipoAccesorio by remember { mutableStateOf("") }
     var selectedLocal by remember { mutableStateOf("") } // Estado global
     var selectedBodega by remember { mutableStateOf("") }
     var selectedCategoria by remember { mutableStateOf("") }
@@ -433,7 +564,7 @@ fun MainScreen(navController: NavController) {
     )
 
     val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
-    val gnombreWifi = ObtenerNombreWifi()
+
 
     val anioActual = LocalDate.now().year
     val mesActual = String.format("%02d", LocalDate.now().monthValue)
@@ -443,10 +574,10 @@ fun MainScreen(navController: NavController) {
     var dialogMessage by remember { mutableStateOf("") }
     var showErrorDialogUSU by remember { mutableStateOf(false) }
     var errorMessageUSU by remember { mutableStateOf("") }
-    CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
+  //  CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
 
 
-    AvisoWifi(gnombreWifi)
+    //AvisoWifi(gnombreWifi)
 
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -495,7 +626,7 @@ fun MainScreen(navController: NavController) {
                     )
                 }
 
-
+                /*
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -516,6 +647,8 @@ fun MainScreen(navController: NavController) {
 
                      */
                 }
+                */
+
                 Spacer(modifier = Modifier.height(6.dp))
             }
 
@@ -532,7 +665,7 @@ fun MainScreen(navController: NavController) {
             */
 
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(7.dp))
 
             var fechaSeleccionada by rememberSaveable { mutableStateOf("") }
             DatePickerWithTextField(
@@ -600,29 +733,29 @@ fun MainScreen(navController: NavController) {
                 }
             }
 
+            Spacer(modifier = Modifier.height(5.dp))
+
             TextField(
                 value = usuarioasigando.uppercase(),
-                onValueChange = { /* No se permite la edición */ },
+                onValueChange = {},
                 label = { Text("Usuario Asignado a Capturador") },
-                readOnly = true, // Este campo es solo de lectura
+                readOnly = true,
                 modifier = Modifier
-                    .width(320.dp) // Definir ancho
+                    .width(320.dp)
                     .height(60.dp),
                 textStyle = TextStyle(
-                    fontSize = 19.sp, // Tamaño del texto
-                    color = Color(0xFF00909E), // Color del texto
-                    fontFamily = FontFamily.Serif, // Familia de fuentes
-                    fontWeight = FontWeight.Bold, // Peso de la fuente
+                    fontSize = 19.sp,
+                    color = Color(0xFF00909E),
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 ),
-                enabled = false,
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    containerColor = Color.White,
-                    disabledTextColor = Color.Black,  // Texto negro cuando está deshabilitado
-                    disabledLabelColor = Color.Gray,   // Etiqueta gris cuando está deshabilitado
-                    disabledBorderColor = Color.Black  // Borde negro cuando está deshabilitado
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Black,
+                    unfocusedBorderColor = Color.Black,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
                 )
-
             )
 
             if (showErrorDialogUSU) {
@@ -643,12 +776,14 @@ fun MainScreen(navController: NavController) {
 
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             ComboBoxTipoProducto(
                 selectedOption = selectedTipo,
                 onOptionSelected = { selectedTipo = it }
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
             ComboBoxLocal(
                 selectedOption = selectedLocal,
                 onOptionSelected = {
@@ -658,7 +793,9 @@ fun MainScreen(navController: NavController) {
             )
 
 
+            // ACA SI ES  ACCESORIOS O  ACCESORIOS BATERIAS
 
+            Spacer(modifier = Modifier.height(8.dp))
 
             ComboBoxGrupoBodega(
                 selectedOption = selectedBodega,
@@ -666,14 +803,18 @@ fun MainScreen(navController: NavController) {
             )
 
 
-            if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && selectedBodega != "1" ) {
+
+            /*ACA REVISAR */
+            /* si es mensual se toma solo baterias*/
+            /* si es anual se toma todo accesorios */
+            if (selectedOption == "INVENTARIO" && selectedTipo == "ACCESORIOS" && tipoProceso == "mensual" ) {
 
                 ComboBoxCategoria(
                     selectedOption = selectedCategoria,
                     onOptionSelected = { selectedCategoria = it }
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick =
@@ -703,26 +844,43 @@ fun MainScreen(navController: NavController) {
 
                     }
 
+
+
+
                     val fechaFormateada = formatearFecha(selectedDate)
                     val fechaCodificada =
                         URLEncoder.encode(fechaFormateada, StandardCharsets.UTF_8.toString())
 
+
+
                     if (selectedOption == "INVENTARIO") {
-                        if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") { // Reemplaza "specific_option" con la opción deseada
+                        if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") {
                             //  if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega == "2")
-                            if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega != "1") {
+                            // conteo normal ubicacion e item
+
+                            /// si es mensual preconteo o es decir solo baterias con ubicacion guiada
+
+                            // if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega != "1") {
+                               if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && tipoProceso == "mensual") {
 
                                 Log.d(
                                     "*MAKITA*111*",
-                                    "Pasa por selectedCategoria quinta_screen: $selectedCategoria"
+                                    "Pasa por selectedCategoria quinta_screen: $tipoProceso"
                                 )
 
                                 navController.navigate("quinta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
 
                             } else {
-                                if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") && (selectedBodega == "1" || selectedBodega == "3")) {
+
+
+
+                                   /// si esno mensual conteo normal  como cualquier item
+                                if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") && (tipoProceso == "general")) {
+
+
+
                                     //19-08-2025 Se cambia a Ubicacion - Item como segunda pantalla
-                                    //navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando")
+                                    //navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$selectedBodega")
                                     navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
 
                                 }
@@ -754,7 +912,7 @@ fun MainScreen(navController: NavController) {
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .width(300.dp)
                     .height(45.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RectangleShape,
             )
             {
 
@@ -776,7 +934,8 @@ fun MainScreen(navController: NavController) {
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .width(300.dp)
                     .height(45.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RectangleShape,
+
             ) {
                 Text(
                     text = "Salir",
@@ -881,13 +1040,23 @@ fun DatePickerWithTextField(selectedDate: String, onDateSelected: (String) -> Un
             readOnly = true,
             enabled = false,
             modifier = Modifier.fillMaxSize(),
-            label = { Text("Ingrese  FECHA INVENTARIO") },
+            label = { Text("Ingrese la FECHA INVENTARIO" , fontSize = 12.sp) },
+            textStyle = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            ),
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.CalendarToday,
                     contentDescription = "Calendario"
                 )
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = Color.Black,
+                disabledBorderColor = Color(0xFF00909E),
+                disabledLabelColor = Color(0xFF00909E),
+                disabledTrailingIconColor = Color(0xFF00909E)
+            )
         )
     }
 }
@@ -952,7 +1121,7 @@ fun ComboBoxWithTextField(
                         Text(
                             option,
                             color = Color.Blue,
-                            fontSize = 20.sp
+                            fontSize = 14.sp
                         )
                     },
                     onClick = {
@@ -1085,7 +1254,7 @@ fun ComboBoxTipoProducto(
                         Text(
                             option,
                             color = Color.Blue,
-                            fontSize = 20.sp
+                            fontSize = 14.sp
                         )
                     },
                     onClick = {
@@ -1097,6 +1266,8 @@ fun ComboBoxTipoProducto(
         }
     }
 }
+
+
 
 
 
@@ -1153,7 +1324,7 @@ fun ComboBoxLocal(
                 DropdownMenuItem(
 
                     text = {
-                        Text(option, color = Color.Blue, fontSize = 20.sp)
+                        Text(option, color = Color.Blue, fontSize = 14.sp)
 
                     },
 
@@ -1425,6 +1596,9 @@ fun SecondScreen(
         gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
         textFieldValue2 = "" // Descripcion
 
+
+        Log.d("*MAKITA*111*", "gFechaInventario2 :  : $gFechaInventario2")
+        Log.d("*MAKITA*111*", "gFechaInventario2 :  : $gFechaInventario")
         ////ACA PARTE
 
        // val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
@@ -1460,6 +1634,7 @@ fun SecondScreen(
                 e.printStackTrace()
             }
         }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -1470,7 +1645,7 @@ fun SecondScreen(
 
             val context = LocalContext.current
             val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
-            val subtitulo = "$gLocal $gnombreDispositivo"
+            val subtitulo = "${gLocal.substring(3)} $gnombreDispositivo"
 
             Titulo2(param = gTipoItem, param2 = subtitulo)
             Separar()
@@ -1767,7 +1942,7 @@ fun SecondScreen(
                 },
                 modifier = Modifier
                     .width(300.dp)
-                    .height(90.dp),
+                    .height(70.dp),
                 label = { Text("Ingreso Manual") },
                 placeholder = {  Text(
                     "Digite el codigo del Item y luego presione el botón ▶ (Play) para validar", // Cambia el texto del label según lo necesario
@@ -2148,7 +2323,7 @@ fun SecondScreen(
                         modifier = Modifier
                             .width(150.dp)
                             .height(70.dp)
-                           // .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))
+                            // .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))
                             .focusRequester(cantidadFocusRequester),
                         textStyle = TextStyle(
                             fontSize = 24.sp,
@@ -2329,7 +2504,7 @@ fun SecondScreen(
                                                     RegistraInventarioRequest(
                                                         Id = "1",
                                                         Empresa = "MAKITA",
-                                                        FechaInventario = FechaFija,
+                                                        FechaInventario = gFechaInventario,
                                                         TipoInventario = "INVENTARIO",
                                                         Bodega = gLocal,
                                                         Clasif1 = gTipoItem,
@@ -2338,7 +2513,8 @@ fun SecondScreen(
                                                         Cantidad = cantidad,
                                                         Estado = "Ingresado",
                                                         Usuario = gusuarioasigando,
-                                                        NombreDispositivo = gnombreDispositivo
+                                                        NombreDispositivo = gnombreDispositivo,
+                                                        GrupoBodega = gGrupoBodega
                                                     )
                                                 Log.d(
                                                     "*MAKITA*",
@@ -2563,7 +2739,7 @@ fun LoadingIndicator() {
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 600, easing = LinearEasing)
+            animation = tween(durationMillis = 350, easing = LinearEasing)
         )
     )
 
@@ -2572,7 +2748,7 @@ fun LoadingIndicator() {
             .fillMaxSize()
             .wrapContentSize(Alignment.Center)
     ) {
-        Canvas(modifier = Modifier.size(60.dp)) {
+        Canvas(modifier = Modifier.size(40.dp)) {
             drawArc(
                 color = Color(0xFF00909E), // Color personalizado
                 startAngle = angle,
@@ -2608,20 +2784,20 @@ fun obtenerDatosWifi(activity: Activity): String {
 
     if (!tienePermisoFine && !tienePermisoCoarse) {
         Log.e("MAKITA*WIFI", "Sin ningún permiso de ubicación")
-        return "Sin permiso ubicación"
+        return "Wifi local"
     }
 
     Log.d("MAKITA*PERMISO", "Usando: ${if (tienePermisoFine) "FINE" else "COARSE"}")
 
     val locationManager = activity.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        ?: return "Ubicación desactivada"
+        ?: return "Wifi local"
 
     val gpsActivo = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     val networkActivo = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
 
     if (!gpsActivo && !networkActivo) {
         Log.e("MAKITA*PERMISO", "Ubicación desactivada en el dispositivo")
-        return "Ubicación desactivada"
+        return "Wifi local"
     }
 
     val wifiManager = activity.applicationContext
@@ -2634,14 +2810,14 @@ fun obtenerDatosWifi(activity: Activity): String {
     val wifiInfo = wifiManager.connectionInfo
     val ssid = wifiInfo?.ssid
 
-    Log.d("MAKITA*PERMISO", "SSID raw: $ssid")
-    Log.d("MAKITA*PERMISO", "BSSID: ${wifiInfo?.bssid}")
-    Log.d("MAKITA*PERMISO", "IP: ${wifiInfo?.ipAddress}")
+    Log.d("MAKITA*111", "SSID raw: $ssid")
+    Log.d("MAKITA*111", "BSSID: ${wifiInfo?.bssid}")
+    Log.d("MAKITA*111", "IP: ${wifiInfo?.ipAddress}")
 
     return if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") {
         ssid.replace("\"", "")
     } else {
-        "Desconocida"
+        "Wifi local"
     }
 }
 
@@ -2665,7 +2841,7 @@ private fun obtenerSSIDAndroid12(context: Context): String {
         ssidResultado = if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") {
             ssid.replace("\"", "")
         } else {
-            "Desconocida"
+            "Wifi local"
         }
     }
 
@@ -2781,7 +2957,7 @@ fun isNetworkAvailable(context: Context): Boolean {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TerceraScreen(navController: NavController, param: String, param2: String, param3: String) {
+fun TerceraScreen(navController: NavController, param: String, param2: String, param3: String, param4: String) {
     val ubicacionFocusRequester = remember { FocusRequester() }
     val cantidadFocusRequester = remember { FocusRequester() }
     val itemFocusRequester = remember { FocusRequester() }
@@ -2803,6 +2979,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal by remember { mutableStateOf("") }
     var gUsuarioAsignado by remember { mutableStateOf("") }
+    var gGrupoBodega by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     var ultimaubicacion by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) } // Estado para el loadingwqeqweqwe
@@ -2823,6 +3000,8 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
         gTipoItem = param ?: gTipoItem
         gLocal = param2 ?: gLocal
         gUsuarioAsignado = param3 ?: gUsuarioAsignado
+        gGrupoBodega = param4 ?: gGrupoBodega
+
 
         Column(
             modifier = Modifier
@@ -2837,7 +3016,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
 
             Log.d("*MAKITA*", "NOMBRE: $gnombreDispositivo")
 
-            val subtitulo = "$gLocal $gnombreDispositivo"
+            val subtitulo = "${gLocal.substring(4)} $gnombreDispositivo"
 
             Titulo()
             Titulo2(param = gTipoItem, param2 = subtitulo)
@@ -3319,7 +3498,8 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
                                                         Cantidad = cantidad,
                                                         Estado = "Ingresado",
                                                         Usuario = gUsuarioAsignado,
-                                                        NombreDispositivo = gnombreDispositivo
+                                                        NombreDispositivo = gnombreDispositivo,
+                                                        GrupoBodega = gGrupoBodega
                                                     )
 
                                                 val bitacoraRegistroUbi =
@@ -3436,6 +3616,7 @@ fun CuartaScreen(
     var grabacionExitosa by remember { mutableStateOf(false) }
     var itemGrabado by remember { mutableStateOf("") }
     var indicePermitido by rememberSaveable { mutableStateOf(0) }
+    var isEnviando by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -3460,7 +3641,7 @@ fun CuartaScreen(
         ) {
             val context = LocalContext.current
             val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
-            val subtitulo = "$gLocal Dispositivo$gnombreDispositivo "
+            val subtitulo = "${gLocal.substring(3)} Dispositivo$gnombreDispositivo "
 
             TituloReconteo()
             Separar()
@@ -3561,7 +3742,7 @@ fun CuartaScreen(
             }
 
 
-            val headers = listOf("#", "Nro", "   Item", "   Ubicacion", "     Cantidad")
+            val headers = listOf("#", "Nro", "   Item", "     Ubicacion", "    Cantidad")
             val fields = listOf<(ItemConCantidad) -> String>(
                 { it.tipoitem },
                 { it.numeroreconteo },
@@ -3764,6 +3945,10 @@ fun CuartaScreen(
 
                                 Button(
                                     onClick = {
+
+                                        if (isEnviando) return@Button
+                                        isEnviando = true
+
                                         if (listaItems[index].cantidad.isEmpty()) {
                                             Toast.makeText(
                                                 context,
@@ -3820,7 +4005,7 @@ fun CuartaScreen(
                                                         indicePermitido = 0
                                                     }
 
-                                                    delay(800)
+                                                    delay(600)
 
                                                 } else {
                                                     val mensaje =
@@ -3839,9 +4024,12 @@ fun CuartaScreen(
                                                     ?: "Error desconocido al enviar ${listaItems[index].item}"
                                                 Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
                                             }
+                                            finally {
+                                                isEnviando = false
+                                            }
                                         }
                                     },
-                                    enabled = botonGrabar,
+                                    enabled = botonGrabar && !isEnviando,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF00909E),
                                         contentColor = Color.White
@@ -3873,7 +4061,7 @@ fun CuartaScreen(
 
                     if (grabacionExitosa) {
                         LaunchedEffect(Unit) {
-                            delay(2000)
+                            delay(1500)
                             grabacionExitosa = false
                         }
                         AlertDialog(
@@ -4306,7 +4494,7 @@ fun QuintaScreen(
                                                 val requestRegistroInventario = RegistraInventarioRequest(
                                                     Id = "1",
                                                     Empresa = "MAKITA",
-                                                    FechaInventario = FechaFija,
+                                                    FechaInventario = gFechaInventario,
                                                     TipoInventario = "INVENTARIO",
                                                     Bodega = gLocal,
                                                     Clasif1 = item.tipoitem,
@@ -4315,7 +4503,8 @@ fun QuintaScreen(
                                                     Cantidad = item.cantidad,
                                                     Estado = "Ingresado",
                                                     Usuario = gUsuario,
-                                                    NombreDispositivo = gnombreDispositivo
+                                                    NombreDispositivo = gnombreDispositivo,
+                                                    GrupoBodega = gGrupoBodega
                                                 )
 
                                                 val bitacoraRegistroUbi =
@@ -5396,7 +5585,7 @@ fun Titulo2(param: String?, param2: String?) {
             .padding(top = 15.dp)
     ) {
         Text(
-            text = "Item ${param ?: "No hay parámetro"}  Local: ${param2 ?: "Sin fecha"}",
+            text = "${param ?: "No hay parámetro"}  Local: ${param2 ?: "Sin fecha"}",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -5417,7 +5606,7 @@ fun Titulo3(param: String?, param2: String?, param3: String?, param4: String?, p
     ) {
         Text(
             text = "Tipo ${param ?: "No hay parámetro"}  Local: ${param2 ?: "No hay parámetro"} ",
-            fontSize = 15.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .padding(2.dp)
@@ -5432,7 +5621,7 @@ fun Titulo3(param: String?, param2: String?, param3: String?, param4: String?, p
     ) {
         Text(
             text = "Usuario ${param3 ?: "No hay parámetro"}  Fecha: ${param4 ?: "No hay parámetro"} ",
-            fontSize = 15.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Red,
             modifier = Modifier
@@ -5444,11 +5633,11 @@ fun Titulo3(param: String?, param2: String?, param3: String?, param4: String?, p
 
     Box(
         modifier = Modifier
-            .padding(top = 4.dp)
+            .padding(top = 2.dp)
     ) {
         Text(
             text = "Dispositivo ${param5 ?: "No hay parámetro"}   ",
-            fontSize = 15.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .padding(5.dp)
