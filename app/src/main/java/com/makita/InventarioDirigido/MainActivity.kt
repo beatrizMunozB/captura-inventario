@@ -2504,7 +2504,7 @@ fun SecondScreen(
                                                     RegistraInventarioRequest(
                                                         Id = "1",
                                                         Empresa = "MAKITA",
-                                                        FechaInventario = gFechaInventario,
+                                                        FechaInventario = FechaFija,
                                                         TipoInventario = "INVENTARIO",
                                                         Bodega = gLocal,
                                                         Clasif1 = gTipoItem,
@@ -4494,7 +4494,7 @@ fun QuintaScreen(
                                                 val requestRegistroInventario = RegistraInventarioRequest(
                                                     Id = "1",
                                                     Empresa = "MAKITA",
-                                                    FechaInventario = gFechaInventario,
+                                                    FechaInventario = FechaFija,
                                                     TipoInventario = "INVENTARIO",
                                                     Bodega = gLocal,
                                                     Clasif1 = item.tipoitem,

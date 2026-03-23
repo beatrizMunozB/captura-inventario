@@ -11,8 +11,8 @@ android {
         applicationId = "com.makita.InventarioDirigido"
         minSdk = 27
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.3.6"
+        versionCode = 10
+        versionName = "1.3.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
