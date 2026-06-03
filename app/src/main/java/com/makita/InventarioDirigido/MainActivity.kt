@@ -2468,7 +2468,18 @@ fun SecondScreen(
                                     try {
 
                                         Log.d("*MAKITA*" , "001 ")
-                                        val FechaFija = formatoFechaSS(System.currentTimeMillis())
+
+                                        val horaActual = SimpleDateFormat(
+                                            "HH:mm:ss",
+                                            Locale.getDefault()
+                                        ).format(Date())
+
+                                        // Volver al original si no funciona la concatenacion
+                                        // val FechaFija = formatoFechaSS(System.currentTimeMillis())
+
+
+                                        val FechaFija = "$gFechaInventario $horaActual"
+
                                         val Usuario = gnombreDispositivo
                                         Log.d("*MAKITA*" , "002 ")
                                         Log.d("*MAKITA*" , "FechaFija $FechaFija ")
