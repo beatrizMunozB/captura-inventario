@@ -163,9 +163,18 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.app.ActivityCompat
 import android.location.LocationManager
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.RectangleShape
+import com.makita.InventarioDirigido.sesion.Sesion
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 
 
 class MainActivity : ComponentActivity() {
@@ -222,6 +231,9 @@ fun CambiarColorBarraEstado(color: Color, darkIcons: Boolean = true) {
         }
     }
 }
+
+
+
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
@@ -437,7 +449,7 @@ fun PrimerFiltroScreen(navController: NavController) {
 
     CambiarColorBarraEstado(color = Color(0xFF00909E), darkIcons = true)
 
-    AvisoWifi(gnombreWifi)
+    //AvisoWifi(gnombreWifi)
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -464,7 +476,7 @@ fun PrimerFiltroScreen(navController: NavController) {
             )
 
             Text(
-                text = "Inventario",
+                text = "Inventario Version 1.3.8 (2026-11)",
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
@@ -602,7 +614,7 @@ fun MainScreen(navController: NavController,  tipoProceso: String) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(70.dp)
+                        .height(60.dp)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.banner_login),
@@ -618,7 +630,7 @@ fun MainScreen(navController: NavController,  tipoProceso: String) {
                     )
 
                     Text(
-                        text = "Inventario",
+                        text = "Inventario version 1.3.8 2026-11",
                         color = Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
@@ -693,7 +705,9 @@ fun MainScreen(navController: NavController,  tipoProceso: String) {
 
                     Log.d("*MAKITA*111*respuesta*", respuesta01.toString())
 
-                    val usuario = respuesta01.data?.Usuario
+                    val usuario = respuesta01.data!!.Usuario
+                    Sesion.nombreResponsable = usuario
+
                     Log.d("*MAKITA*111*", "Usuario obXXXtenido: $usuario")
 
                     if (usuario.isNullOrBlank()) {
@@ -797,10 +811,16 @@ fun MainScreen(navController: NavController,  tipoProceso: String) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            ComboBoxGrupoBodega(
-                selectedOption = selectedBodega,
-                onOptionSelected = { selectedBodega = it }, local = selectedLocal.take(2)
-            )
+
+
+            if (selectedLocal.isNotBlank()) {
+
+                ComboBoxGrupoBodega(
+                    selectedOption = selectedBodega,
+                    onOptionSelected = { selectedBodega = it },
+                    local = selectedLocal.take(2)
+                )
+            }
 
 
 
@@ -816,106 +836,107 @@ fun MainScreen(navController: NavController,  tipoProceso: String) {
             }
             Spacer(modifier = Modifier.height(8.dp))
 
+
             Button(
-                onClick =
-                {
+                onClick = {
+
                     if (selectedOption.isEmpty()) {
-                        showError = true // Muestra el error si no hay selección
+                        showError = true
                         Toast.makeText(
                             context,
                             "Campo Obligatorio, debe ingresar Tipo de Inventario",
                             Toast.LENGTH_LONG
                         ).show()
+                        return@Button
                     } else {
                         showError = false
-                        // Acción adicional si la selección es válida
                         println("Opción seleccionada: $selectedOption")
                     }
 
                     if (usuarioasigando.isEmpty()) {
-                        showError = true // Muestra el error si no hay selección
+                        showError = true
                         Toast.makeText(
                             context,
                             "Usuario No Asociado a capturador, solicite al Administracion su Asignacion",
                             Toast.LENGTH_LONG
                         ).show()
+                        return@Button
                     } else {
                         showError = false
-
                     }
 
-
-
-
                     val fechaFormateada = formatearFecha(selectedDate)
-                    val fechaCodificada =
-                        URLEncoder.encode(fechaFormateada, StandardCharsets.UTF_8.toString())
-
-
+                    val fechaCodificada = URLEncoder.encode(
+                        fechaFormateada,
+                        StandardCharsets.UTF_8.toString()
+                    )
 
                     if (selectedOption == "INVENTARIO") {
+
                         if (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") {
-                            //  if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega == "2")
-                            // conteo normal ubicacion e item
 
-                            /// si es mensual preconteo o es decir solo baterias con ubicacion guiada
 
-                            // if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && selectedBodega != "1") {
-                               if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && tipoProceso == "mensual") {
-
+                            if (selectedCategoria == "BATERIAS" && selectedTipo == "ACCESORIOS" && tipoProceso == "mensual"
+                            ) {
                                 Log.d(
                                     "*MAKITA*111*",
                                     "Pasa por selectedCategoria quinta_screen: $tipoProceso"
                                 )
 
-                                navController.navigate("quinta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
+                                navController.navigate(
+                                    "quinta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega"
+                                )
 
-                            } else {
+                            } else if (selectedTipo == "REPUESTOS") {
 
+                                // REPUESTOS → second_screen (mensual o general)
+                                navController.navigate(
+                                    "second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega"
+                                )
 
-
-                                   /// si esno mensual conteo normal  como cualquier item
-                                if (selectedCategoria != "BATERIAS" && (selectedTipo == "ACCESORIOS" || selectedTipo == "REPUESTOS") && (tipoProceso == "general")) {
-
-
-
-                                    //19-08-2025 Se cambia a Ubicacion - Item como segunda pantalla
-                                    //navController.navigate("third_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$selectedBodega")
-                                    navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
-
-                                }
-                            }
-
-
-                        } else {
-                            navController.navigate("second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
-                        }
-                    } else {
-
-                        if (selectedOption == "RECONTEO") {
-
-                            val fechaFormateada = formatearFecha(selectedDate)
-                            val fechaCodificada = URLEncoder.encode(
-                                fechaFormateada,
-                                StandardCharsets.UTF_8.toString()
+                            } else if (selectedTipo == "ACCESORIOS" && selectedCategoria != "BATERIAS" && tipoProceso == "general"
                             )
-                            navController.navigate("cuarta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega")
+                            {
+                                navController.navigate(
+                                    "second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega"
+                                )
+                            }
                         }
+                        else
+                        {
+                            navController.navigate(
+                                "second_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega"
+                            )
+                        }
+
+                    } else if (selectedOption == "RECONTEO") {
+
+                        navController.navigate(
+                            "cuarta_screen/$selectedTipo/$selectedLocal/$usuarioasigando/$fechaCodificada/$selectedBodega"
+                        )
                     }
                 },
-                enabled = selectedOption.isNotEmpty() && selectedTipo.isNotEmpty() && selectedLocal.isNotEmpty() && usuarioasigando.isNotEmpty() && selectedBodega.isNotEmpty() && selectedBodega.isNotEmpty() && selectedDate.isNotEmpty(), // Habilita el botón solo si todos los campos están llenos,
+
+                enabled = selectedOption.isNotEmpty() &&
+                        selectedTipo.isNotEmpty() &&
+                        selectedLocal.isNotEmpty() &&
+                        usuarioasigando.isNotEmpty() &&
+                        selectedBodega.isNotEmpty() &&
+                        selectedDate.isNotEmpty(),
+
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF00909E),
                     contentColor = Color.White
                 ),
+
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .width(300.dp)
                     .height(45.dp),
-                shape = RectangleShape,
-            )
-            {
 
+                shape = RectangleShape
+
+            ) {
                 Text(
                     text = "${selectedOption.uppercase()} ${selectedTipo.uppercase()} ${selectedCategoria.uppercase()}",
                     color = Color.White,
@@ -923,6 +944,7 @@ fun MainScreen(navController: NavController,  tipoProceso: String) {
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
+
 
             Button(
                 onClick = { activity?.finish() },
@@ -1344,43 +1366,57 @@ fun ComboBoxLocal(
 fun ComboBoxGrupoBodega(
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
-    local: String,
-
-    ) {
-
+    local: String
+) {
     var expanded by remember { mutableStateOf(false) }
-    var opciones by remember { mutableStateOf<List<GrupoBodegaResponse>>(emptyList()) }
-    val context = LocalContext.current
+    var opciones by remember {
+        mutableStateOf<List<GrupoBodegaResponse>>(emptyList())
+    }
     var showErrorDialog by remember { mutableStateOf(false) }
 
-    val backgroundColor = if (selectedOption.isNotEmpty()) Color(0xFFD6F6FF) else Color.Transparent
+    val backgroundColor =
+        if (selectedOption.isNotEmpty()) Color(0xFFD6F6FF)
+        else Color.Transparent
 
     LaunchedEffect(local) {
-        //val localValue = if (local.isNullOrEmpty()) "01" else local
-        val localValue = if (local.isNullOrEmpty()) "01" else local
+
+        if (local.isBlank()) {
+            opciones = emptyList()
+            return@LaunchedEffect
+        }
+
         try {
+            Log.d("*MAKITA*", "LOCAL ENVIADO: ${local.trim()}")
 
-            val respuesta22 = apiService.obtenerGrupoBodega("MAKITA", localValue.trim())
+            val respuesta22 = withContext(Dispatchers.IO) {
+                apiService.obtenerGrupoBodega("MAKITA", local.trim())
+            }
 
-            if (respuesta22.isNotEmpty()) {
-                opciones = respuesta22
-                Log.d("*MAKITA*", "Grupos obtenidos: $respuesta22")
+            Log.d("*MAKITA*", "RESPUESTA: $respuesta22")
+
+            opciones = respuesta22
+
+            respuesta22.forEach {
+                Log.d("*MAKITA*", "Grupo: ${it.GrupoBodega}")
+                Log.d("*MAKITA*", "Nombre: ${it.NombreGrupoBodega}")
+                Log.d("*MAKITA*", "Bodega SAP: ${it.bodegaSAP}")
             }
 
         } catch (e: Exception) {
-            // Log.e("MAKITA", "Error al obtener grupo ", e)
-            //val linea = "Debe Seleccionar local y Grupo " + e.message
-            showErrorDialog = true
+            Log.e("*MAKITA*", "Error al obtener grupos de bodega", e)
 
-            val linea = "Debe Seleccionar local y Grupo "
+            opciones = emptyList()
+            showErrorDialog = true
         }
     }
 
     if (showErrorDialog) {
         mostrarDialogo(
-            titulo = "Error",
-            mensaje = "Debe Seleccionar local y Grupo ",
-            onDismiss = { showErrorDialog = false }
+            titulo = "Aviso!",
+            mensaje = "Error al obtener los grupos de bodega",
+            onDismiss = {
+                showErrorDialog = false
+            }
         )
     }
 
@@ -1391,47 +1427,96 @@ fun ComboBoxGrupoBodega(
             modifier = Modifier
                 .height(60.dp)
                 .width(320.dp)
-                .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                .clickable { expanded = true },
+                .background(
+                    backgroundColor,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .clickable {
+                    expanded = true
+                },
             readOnly = true,
-            label = { Text("Seleccione Grupo de Bodega ", fontSize = 12.sp) },
+            label = {
+                Text(
+                    "Seleccione Grupo de Bodega",
+                    fontSize = 12.sp
+                )
+            },
             textStyle = TextStyle(
-                fontWeight = if (selectedOption.isNotEmpty()) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (selectedOption.isNotEmpty())
+                    FontWeight.Bold
+                else
+                    FontWeight.Normal,
                 color = Color.Black
             ),
             trailingIcon = {
                 Icon(
-                    imageVector = if (expanded) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
+                    imageVector = if (expanded)
+                        Icons.Filled.ArrowUpward
+                    else
+                        Icons.Filled.ArrowDownward,
                     contentDescription = null,
-                    modifier = Modifier.clickable { expanded = !expanded }
+                    modifier = Modifier.clickable {
+                        expanded = !expanded
+                    }
                 )
             }
         )
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = {
+                expanded = false
+            }
         ) {
             opciones.forEach { option ->
+
                 DropdownMenuItem(
                     text = {
                         Text(
                             option.NombreGrupoBodega,
-                            color = if (selectedOption == option.NombreGrupoBodega) Color.Blue else Color.Blue,
+                            color = Color.Blue,
                             fontSize = 14.sp
                         )
-
                     },
                     onClick = {
 
-                        onOptionSelected(option.GrupoBodega)
-                        expanded = false
+                        val bodega = option.bodegaSAP?.trim()
+
+                        if (bodega.isNullOrEmpty()) {
+
+                            Log.e(
+                                "*MAKITA*",
+                                "Bodega SAP NULL para grupo: ${option.GrupoBodega}"
+                            )
+
+                            showErrorDialog = true
+                            expanded = false
+
+                        } else {
+
+                            onOptionSelected(option.GrupoBodega)
+
+                            Sesion.bodega = bodega
+
+                            Log.d(
+                                "*MAKITA*",
+                                "GRUPO SELECCIONADO: ${option.GrupoBodega}"
+                            )
+
+                            Log.d(
+                                "*MAKITA*",
+                                "BODEGA SAP SELECCIONADA: ${Sesion.bodega}"
+                            )
+
+                            expanded = false
+                        }
                     }
                 )
             }
         }
     }
 }
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1549,6 +1634,7 @@ fun SecondScreen(
     //var responseStock by rememberSaveable { mutableStateOf<List<ItemStockResponse>>(emptyList()) }
     var errorState by rememberSaveable { mutableStateOf<String?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    var showDialog4 by remember { mutableStateOf(false) }
     var textFieldValue2 by remember { mutableStateOf("") }
     var showErrorDialog by remember { mutableStateOf(false) }
     var ubicacion by remember { mutableStateOf("") }
@@ -1557,6 +1643,7 @@ fun SecondScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     var gTipoItem by remember { mutableStateOf("") }
     var gLocal by remember { mutableStateOf("") }
+    var linea by remember { mutableStateOf("") }
     var gusuarioasigando by remember { mutableStateOf("") }
     var gFechaInventario by remember { mutableStateOf("") }
     var gFechaInventario2 by remember { mutableStateOf("") }
@@ -1578,27 +1665,95 @@ fun SecondScreen(
     var textoDialogoWifiError by remember { mutableStateOf("") }
     val context = LocalContext.current
     val activity = context as Activity
+    val coroutineScope = rememberCoroutineScope()
+
+
+
+    Log.d("*MAKITA*", "segunda pantalla pantalla: ")
 
     fun validarCampos(): Boolean {
         return cantidad.isNotEmpty()
     }
+
+
+
+    suspend fun validarUbicacion(binCodeEntrada: String = ubicacion) {
+
+        keyboardController?.hide()
+
+        val binCode = binCodeEntrada.trim().uppercase()
+
+        if (binCode.isBlank()) return
+
+        try {
+
+            Log.d("*MAKITA*", "Validando ubicacion: $binCode")
+            Log.d("*MAKITA*", "Bodega SecondScreen : ${Sesion.bodega}")
+
+            // Validar que la ubicación pertenezca a la bodega
+            val resp = apiService.validarUbicacionBodega(
+                Sesion.bodega,
+                binCode
+            )
+
+            Log.d("*MAKITA*", "Respuesta validar ubicacion: $resp")
+
+
+            if (resp.trim().uppercase() == "SI") {
+
+                itemFocusRequester.requestFocus()
+
+            } else {
+
+                mensajeError = "El codigo $binCode no corresponde a una ubicacion valida."
+                showDialog = true
+                ubicacion = ""
+                ubicacionFocusRequester.requestFocus()
+            }
+
+
+        } catch (e: Exception) {
+
+            Log.e("*MAKITA*", "Error validando ubicación", e)
+
+            mensajeError = "Error validando ubicación: ${e.message}"
+            showDialog = true
+
+            ubicacion = ""
+            ubicacionFocusRequester.requestFocus()
+        }
+    }
+
+
+
 
     Surface(
         modifier = Modifier.fillMaxSize(),
 
         ) {
 
-        gTipoItem = param ?: gTipoItem
-        gLocal = param2 ?: gLocal
-        gusuarioasigando = param3 ?: gusuarioasigando
+        gTipoItem         = param ?: gTipoItem
+        gLocal            = param2 ?: gLocal
+        gusuarioasigando  = param3 ?: gusuarioasigando
         gFechaInventario2 = param4 ?: gFechaInventario
-        gGrupoBodega = param5 ?: gGrupoBodega
+        gGrupoBodega     = param5 ?: gGrupoBodega
         gFechaInventario = URLDecoder.decode(gFechaInventario2, StandardCharsets.UTF_8.toString())
         textFieldValue2 = "" // Descripcion
 
 
-        Log.d("*MAKITA*111*", "gFechaInventario2 :  : $gFechaInventario2")
-        Log.d("*MAKITA*111*", "gFechaInventario2 :  : $gFechaInventario")
+        /*
+        Log.d("*MAKITA*", "gFechaInventario2 :  : $gFechaInventario2")
+        Log.d("*MAKITA*", "gFechaInventario2 :  : $gFechaInventario")
+
+        Log.d("*MAKITA*", "gLocal :  : $gLocal")
+
+        Log.d("*MAKITA*", "gusuarioasigando :  : $gusuarioasigando")
+
+        Log.d("*MAKITA*", "gGrupoBodega :  : $gGrupoBodega")
+        */
+
+        Log.d("*MAKITA*", "Bodega: ${Sesion.bodega}")
+
         ////ACA PARTE
 
        // val apiResponse = apiService.obtenerUbicacionItem(extractedText.trim())
@@ -1640,16 +1795,42 @@ fun SecondScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
 
             val context = LocalContext.current
             val gnombreDispositivo = remember { obtenerNombreDelDispositivo(context) }
             val subtitulo = "${gLocal.substring(3)} $gnombreDispositivo"
+//ACA
 
-            Titulo2(param = gTipoItem, param2 = subtitulo)
-            Separar()
-            Spacer(modifier = Modifier.height(12.dp))
+           // Titulo2(param = gTipoItem, param2 = subtitulo)
+
+
+            ElevatedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    ,
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 4.dp
+                ),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = Color(0xFF00695C)
+                ),
+                shape = RectangleShape
+            ) {
+                Text(
+                    text = "${param ?: "No hay parámetro"}  Local: ${param2 ?: "Sin fecha"}  Bodega: ${Sesion.bodega}",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(7.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
 
             LaunchedEffect(Unit) {
                 try {
@@ -1665,10 +1846,9 @@ fun SecondScreen(
                     Log.e("*MAKITA*", "lee la API obtenerUltimaUbicacion")
 
                     if (respuesta.isNotEmpty()) {
-                        withContext(Dispatchers.Main) { // Asegura que se actualiza en el hilo principal
-                            ultimaubicacion =
-                                respuesta.first().ubicacion // Solo toma la primera ubicación
-                            ubicacionFocusRequester.requestFocus()
+                        withContext(Dispatchers.Main) {
+                            ultimaubicacion = respuesta.first().ubicacion
+                            //ubicacionFocusRequester.requestFocus()
                         }
                     }
                 } catch (e: Exception) {
@@ -1692,19 +1872,25 @@ fun SecondScreen(
                     fontWeight = FontWeight.Bold // Peso de la fuente
                 ),
                 enabled = false
-
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
+            Spacer(modifier = Modifier.height(7.dp))
 
             LaunchedEffect(Unit) {
                 ubicacionFocusRequester.requestFocus()
             }
 
+
+
+            /*
             OutlinedTextField(
                 value = ubicacion,
                 onValueChange = {
                     ubicacion = it.uppercase()
+
+                    if (it.isNotEmpty()) {
+                        keyboardController?.hide()
+                    }
 
                     if (it.length >= 5 && it.isNotEmpty())
                     {
@@ -1742,10 +1928,124 @@ fun SecondScreen(
                 },
                 isError = ubicacion.length > 8
             )
+            */
+
+
+
+            OutlinedTextField(
+                value = ubicacion,
+
+                onValueChange = { texto ->
+                    ubicacion = texto.uppercase()
+
+                    if (texto.isNotEmpty()) {
+                        keyboardController?.hide()
+                    }
+                },
+
+                label = {
+                    Text("Escanear Ubicacion")
+                },
+
+                placeholder = {
+                    Text("Escanear o digitar Ubicacion")
+                },
+
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text
+                ),
+
+                modifier = Modifier
+                    .width(300.dp)
+                    .height(60.dp)
+                    .focusRequester(ubicacionFocusRequester)
+                    .onPreviewKeyEvent { event ->
+
+                        if (
+                            event.type == KeyEventType.KeyDown &&
+                            (
+                                    event.key == Key.Enter ||
+                                            event.key == Key.NumPadEnter
+                                    )
+                        ) {
+                            val codigo = ubicacion.trim().uppercase()
+
+                            if (codigo.isNotBlank()) {
+                                keyboardController?.hide()
+
+                                Log.d("*MAKITA*", "FIN DE ESCANEO: $codigo")
+
+                                coroutineScope.launch {
+                                    validarUbicacion(codigo)
+                                }
+                            }
+
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            keyboardController?.hide()
+                        }
+                    },
+
+                singleLine = true,
+
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.LocationOn,
+                        contentDescription = "Icono de ubicacion"
+                    )
+                },
+
+                trailingIcon = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (ubicacion.isNotEmpty()) {
+                            IconButton(
+                                onClick = {
+                                    ubicacion = ""
+                                    ubicacionFocusRequester.requestFocus()
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "Borrar texto"
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = {
+                                if (ubicacion.isNotBlank()) {
+                                    keyboardController?.hide()
+
+                                    coroutineScope.launch {
+                                        validarUbicacion(ubicacion)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = "Validar ubicacion",
+                                tint = Color(0xFF00695C)
+                            )
+                        }
+                    }
+                },
+
+                isError = ubicacion.length > 8
+            )
+
+
 
 
             if (ubicacion.length > 10) {
-                mensajeError2 = "La ubicación no debe exceder los 10 caracteres"
+                mensajeError2 = "La ubicacion no debe exceder los 10 caracteres"
                 // mostrarDialogo3(context, "Error", mensajeError2)
                 mostrarDialogo3(
                     titulo = "Error",
@@ -1761,15 +2061,19 @@ fun SecondScreen(
 
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(7.dp))
+
             if (isLoading) {
                 Log.d("*MAKITA*", " pasa a is loading ubicacion : ${ubicacion}")
                 LoadingIndicator()
             }
 
+
             OutlinedTextField(
                 value = text,
                 onValueChange = { newText ->
+
+                    Log.d("*MAKITA*", "LECTURA RECIBIDA EN ITEM: $newText")
                     text = newText
 
                     val cleanedText = newText.trim().replace("\n", "").replace("\r", "")
@@ -1778,63 +2082,61 @@ fun SecondScreen(
                     if (gTipoItem == "HERRAMIENTAS")
                     {
 
-                    try {
+                        try {
 
-                        Log.d("*MAKITA*111*", "LARGO ENTRA validarTipoItem: ${newText.length}")
+                            Log.d("*MAKITA*111*", "LARGO ENTRA validarTipoItem: ${newText.length}")
 
-                        if (newText.length > 20) {
-                            extractedText  = newText.substring(0, 20) // Primeros 20 caracteres (item)
-                            extractedText2 = newText.substring(20, newText.length.coerceAtMost(29)) // Serie desde
-                            extractedText3 = newText.substring(29, newText.length.coerceAtMost(38)) // Serie hasta
-                            extractedText4 = newText.substring(39, newText.length.coerceAtMost(52)) // EAN
+                            if (newText.length > 20) {
+                                extractedText  = newText.substring(0, 20) // Primeros 20 caracteres (item)
+                                extractedText2 = newText.substring(20, newText.length.coerceAtMost(29)) // Serie desde
+                                extractedText3 = newText.substring(29, newText.length.coerceAtMost(38)) // Serie hasta
+                                extractedText4 = newText.substring(39, newText.length.coerceAtMost(52)) // EAN
 
-                            Log.d("*MAKITA*", "PASA validarTipoItem: ${extractedText}")
-                        }
-                        else
+                                Log.d("*MAKITA*", "PASA validarTipoItem: ${extractedText}")
+                            }
+                            else
+                            {
+                                // AQUI HAY
+                                // Cuando el texto es menor o igual a 20 caracteres
+                                //
+                                Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
+
+                                extractedText = newText.substring(0, newText.length.coerceAtMost(19))
+                                extractedText2 = ""
+                                extractedText3 = ""
+                                extractedText4 = ""
+                                //
+                                //extractedText = newText // Guardamos lo que sea...
+                                //extractedText2 = ""
+                                //extractedText3 = ""
+                                //extractedText4 = ""
+
+                            }
+                        } catch (e: Exception)
                         {
-                            // AQUI HAY
-                            // Cuando el texto es menor o igual a 20 caracteres
-                            //
-                            Log.d("*MAKITA*", "LARGO NO - ENTRA validarTipoItem: ${newText.length}")
+                            Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
 
-                            extractedText = newText.substring(0, newText.length.coerceAtMost(19))
+                            extractedText = ""
                             extractedText2 = ""
                             extractedText3 = ""
                             extractedText4 = ""
-                            //
-                            //extractedText = newText // Guardamos lo que sea...
+                            Toast.makeText(context, "Largo de etiqueta incorrecta (${newText.length})", Toast.LENGTH_SHORT).show()
+
+                            //Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
+
+                            ///extractedText = newText // Guardamos al menos el texto escaneado
                             //extractedText2 = ""
                             //extractedText3 = ""
                             //extractedText4 = ""
 
+                            //toast.makeText(context, "Error procesando la etiqueta (${newText.length})", Toast.LENGTH_SHORT).show()
+
                         }
-                    } catch (e: Exception)
-                    {
-                        Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
 
-                        extractedText = ""
-                        extractedText2 = ""
-                        extractedText3 = ""
-                        extractedText4 = ""
-                        Toast.makeText(context, "Largo de etiqueta incorrecta (${newText.length})", Toast.LENGTH_SHORT).show()
-
-                        //Log.e("*MAKITA*111*", "Error al extraer texto: ${e.message}")
-
-                        ///extractedText = newText // Guardamos al menos el texto escaneado
-                        //extractedText2 = ""
-                        //extractedText3 = ""
-                        //extractedText4 = ""
-
-                        //toast.makeText(context, "Error procesando la etiqueta (${newText.length})", Toast.LENGTH_SHORT).show()
-
-                    }
-
-
-
-                    if (newText.length >= 20) {
-                        keyboardController?.hide() // Ocultar teclado
-                        cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
-                    }
+                        if (newText.length >= 20) {
+                            keyboardController?.hide() // Ocultar teclado
+                            cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
+                        }
 
                     }
                     else
@@ -1882,15 +2184,29 @@ fun SecondScreen(
                             extractedText3 = ""
                             extractedText4 = ""
                             keyboardController?.hide() // Ocultar teclado
-                            cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
+                            /* cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo*/
 
                         }
+
+
 
 
                         if (newText.length >= 20) {
                             keyboardController?.hide() // Ocultar teclado
                             cantidadFocusRequester.requestFocus() // Pasar el foco al siguiente campo
                         }
+
+                        if (newText.isNotBlank() && newText.length < 20) {
+                            extractedText = newText.trim()
+                            extractedText2 = ""
+                            extractedText3 = ""
+                            extractedText4 = ""
+
+                            keyboardController?.hide()
+                            cantidadFocusRequester.requestFocus()
+                        }
+
+
 
 
 
@@ -1908,6 +2224,7 @@ fun SecondScreen(
                     .height(90.dp)
                     .focusRequester(itemFocusRequester) // Asociar FocusRequester
                     .onFocusChanged { focusState ->
+                        Log.d("*MAKITA*", "FOCO CAMPO ITEM: ${focusState.isFocused}")
                         if (focusState.isFocused) {
                             keyboardController?.hide()
                         }
@@ -1924,7 +2241,8 @@ fun SecondScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+
+            Spacer(modifier = Modifier.height(7.dp))
 
             OutlinedTextField(
                 value = secondTextFieldValue, // Variable para el estado del nuevo TextField
@@ -1983,7 +2301,7 @@ fun SecondScreen(
                 },
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             TextField(
                 /*value = extractedText.trim(), */
@@ -1997,12 +2315,12 @@ fun SecondScreen(
                 readOnly = true, // Este campo es solo de lectura
                 modifier = Modifier
                     .width(300.dp) // Definir ancho
-                    .height(60.dp),
+                    .height(55.dp),
                 textStyle = TextStyle(
-                    fontSize = 20.sp, // Tamaño del texto
-                    color = Color.Red, // Color del texto
-                    fontFamily = FontFamily.Serif, // Familia de fuentes
-                    fontWeight = FontWeight.Bold // Peso de la fuente
+                    fontSize = 16.sp,
+                    color = Color.Blue,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold
                 ),
                 enabled = false
 
@@ -2030,9 +2348,6 @@ fun SecondScreen(
                 CoroutineScope(Dispatchers.IO).launch {
                         var continuar = true
                         try {
-
-
-
 
                             Log.d(
                                 "*MAKITA**",
@@ -2259,96 +2574,107 @@ fun SecondScreen(
             }
 
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(6.dp))
+
+
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Texto a la izquierda y a la derecha en una fila
-                Row(
+
+
+                TextField(
+                    value = textFieldValue2,
+                    onValueChange = { /* No se permite la edición */ },
+                    label = { Text("Descripcion") },
+                    readOnly = true,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween // Distribuir los textos entre los extremos
-                ) {
+                        .width(300.dp)
+                        .height(55.dp),
+                    textStyle = TextStyle(
+                        fontSize = 16.sp,
+                        color = Color.Blue,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    enabled = false
+                )
 
+                Spacer(modifier = Modifier.height(6.dp))
 
-                    // Campo de solo lectura
-                    TextField(
-                        value = textFieldValue2.uppercase().trim(),
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier
-                            .width(170.dp)
-                            .height(70.dp),
-                        textStyle = TextStyle(
-                            fontSize = 14.sp,
-                            color = Color.Red,
-                            fontFamily = FontFamily.Serif,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
+                /*ACAACAACA*/
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Campo editable con validación
-                    OutlinedTextField(
-                        value = cantidad,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() } && newValue.length <= 10) { // Limitar a 10 caracteres
-                                cantidad = newValue
-                            }
-                        },
-
-                        label = { Text("Cantidad") },
-
-                        placeholder = { Text(text = "Cantidad",
-                                style = TextStyle(
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Red
-                            )
-                        ) },
-                        keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                keyboardController?.hide() // Oculta el teclado cuando se presiona Done
-                            }
-                        ),
-                        modifier = Modifier
-                            .width(150.dp)
-                            .height(70.dp)
-                            // .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))
-                            .focusRequester(cantidadFocusRequester),
-                        textStyle = TextStyle(
-                            fontSize = 24.sp,
-                            color = Color.Blue,
-                            fontFamily = FontFamily.Serif,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        singleLine = true,
-                        isError = cantidad.length > 10 // Nuncan las cantidades exceden de 10 digitos
-                    )
-
-
-                    if (cantidad.length > 10) {
+                OutlinedTextField(
+                    value = cantidad,
+                    onValueChange = { newValue ->
+                        if (
+                            newValue.all { it.isDigit() } &&
+                            newValue.length <= 10
+                        ) {
+                            cantidad = newValue
+                        }
+                    },
+                    placeholder = {
                         Text(
-                            text = "La cantidad no debe exceder los 10 caracteres",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
-                    }
-                }
+                            text = "Ingrese Cantidad Contada",
+                            style = TextStyle(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Normal,
+                                fontFamily = FontFamily.Serif,
+                                color = Color.Black
 
+                            )
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                        }
+                    ),
+                    modifier = Modifier
+                        .width(250.dp)
+                        .height(55.dp)
+                        .focusRequester(cantidadFocusRequester),
+                    textStyle = TextStyle(
+                        fontSize = 22.sp,
+                        color = Color.Blue,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    singleLine = true,
+                    isError = cantidad.length > 10,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFFFFF9C4),
+                        unfocusedContainerColor = Color(0xFFFFF9C4),
+                        errorContainerColor = Color(0xFFFFF9C4)
+                    )
+                )
+
+
+                if (cantidad.length > 10) {
+                    Text(
+                        text = "La cantidad no debe exceder los 10 caracteres",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .width(300.dp)
+                            .padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(15.dp))
+
+
+
+
+
+
+            Spacer(modifier = Modifier.height(7.dp))
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -2363,8 +2689,8 @@ fun SecondScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     val buttonModifier = Modifier
-                        .width(110.dp)  // Asegura que todos los botones tengan el mismo ancho
-                        .height(45.dp)  // Asegura que todos los botones tengan la misma altura
+                        .width(110.dp)
+                        .height(45.dp)
                         .padding(horizontal = 3.dp)
 
                     val buttonColors = ButtonDefaults.buttonColors(
@@ -2387,7 +2713,7 @@ fun SecondScreen(
                             .padding(horizontal = 7.dp, vertical = 4.dp)
                             .width(100.dp)
                             .height(43.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RectangleShape,
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
                     ) {
                         Icon(
@@ -2427,7 +2753,7 @@ fun SecondScreen(
                             .padding(horizontal = 7.dp, vertical = 4.dp)
                             .width(100.dp)
                             .height(43.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RectangleShape,
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
 
                     ) {
@@ -2439,11 +2765,10 @@ fun SecondScreen(
                         )
                         Text(text = "Borrar", fontSize = 14.sp)
                     }
-
+                    /*ACAACAACA*/
                     Button(
                         onClick = {
-                            Log.d("*MAKITA*" , "ingresa a grabar  ${extractedText.isBlank() }")
-                            Log.d("*MAKITA*" , "ingresa a grabar  ${secondTextFieldValue.trim()}")
+
 
                             isLoading = true
 
@@ -2475,14 +2800,14 @@ fun SecondScreen(
                                         ).format(Date())
 
                                         // Volver al original si no funciona la concatenacion
-                                        // val FechaFija = formatoFechaSS(System.currentTimeMillis())
 
+                                        val gFechaCaptura = formatoFechaSS(System.currentTimeMillis())
 
                                         val FechaFija = "$gFechaInventario $horaActual"
 
                                         val Usuario = gnombreDispositivo
                                         Log.d("*MAKITA*" , "002 ")
-                                        Log.d("*MAKITA*" , "FechaFija $FechaFija ")
+                                        Log.d("*MAKITA*" , "FechaFija es la fecha del inventario $FechaFija ")
                                         Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} ")
                                         Log.d("*MAKITA*" , "ubicacion.trim() ${ubicacion.trim()} ")
                                         Log.d("*MAKITA*" , "002 ${Usuario}" )
@@ -2493,18 +2818,22 @@ fun SecondScreen(
                                         }
 
                                         Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} " )
+                                        Log.d("*MAKITA*" , "pasa por validar las validarUbicacionProducto ${ubicacion.trim()} " )
 
+
+                                        /* VALIDA QUE NO LO HAYAN INVENTARIADO ANTES*/
                                         val response33 = apiService.validarUbicacionProducto(
                                             FechaFija,
                                             extractedText.trim(),  //item
                                             ubicacion.trim(), //ubicacion
                                             Usuario
                                         )
+
                                         Log.d("*MAKITA*" , "VALIDA QUE NO EXISTE ITEM EN UBICACION ")
                                         Log.d("*MAKITA*" , "extractedText.trim() ${extractedText.trim()} ")
                                         Log.d("*MAKITA*" , "ubicacion.trim() ${ubicacion.trim()} ")
 
-                                        Log.d("MAKITA*" , "003 $response33" )
+                                        Log.d("MAKITA*" , "response33 $response33" )
 
                                         if (!response33.isNullOrEmpty()) {
                                             errorState =
@@ -2555,18 +2884,24 @@ fun SecondScreen(
                                                     requestRegistroInventario,
                                                     FechaFija
                                                 )
-                                                delay(1500)
+                                                delay(500)
                                                 Toast.makeText(
                                                     context,
                                                     "Registro Grabado",
                                                     Toast.LENGTH_LONG
                                                 ).show()
-                                            } else {
-                                                var linea =
-                                                    "Item: ${extractedText.trim()} en Ubicacion ${extractedText2.trim()} YA INVENTARIADO"
-                                                Toast.makeText(context, linea, Toast.LENGTH_SHORT)
-                                                    .show()
-                                                //mostrarDialogo2(context, "Error", linea)
+                                            }
+                                            else
+                                            {
+
+                                                Log.d("*MAKITA*", "Registro duplicado")
+                                                linea = " Item: ${extractedText.trim()} en Ubicacion ${ubicacion.trim()}, ya se encuentra inventariado! "
+                                                Log.d("MAKITA", linea)
+                                                //Toast.makeText(context, linea, Toast.LENGTH_SHORT).show()
+                                                //ACAACA
+                                                showDialog4 = true
+
+
                                             }
                                         }
 
@@ -2585,7 +2920,7 @@ fun SecondScreen(
                                     } catch (e: Exception) {
                                         Log.d("*MAKITA*", "ERROR: ${e.message}")
                                         errorState = "Error: ${e.message}"
-                                        delay(1500)
+                                        delay(1200)
                                         Toast.makeText(
                                             context,
                                             "Error al grabar el item, intentelo nuevamente",
@@ -2614,7 +2949,7 @@ fun SecondScreen(
                             .padding(horizontal = 7.dp, vertical = 4.dp)
                             .width(100.dp)
                             .height(43.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RectangleShape,
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
                         enabled = !isLoading && validarCampos()
                     ) {
@@ -2626,6 +2961,14 @@ fun SecondScreen(
                         )
 
                         Text(text = "Guardar", fontSize = 14.sp)
+                    }
+
+                    if (showDialog4) {
+                        mostrarDialogo3(
+                            titulo = "Aviso",
+                            mensaje = linea,
+                            onDismiss = { showDialog4 = false }
+                        )
                     }
                 }
             }
@@ -2750,7 +3093,7 @@ fun LoadingIndicator() {
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 350, easing = LinearEasing)
+            animation = tween(durationMillis = 400, easing = LinearEasing)
         )
     )
 
@@ -2771,7 +3114,7 @@ fun LoadingIndicator() {
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Grabando informacion...",
-            fontSize = 18.sp,
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Red,
             modifier = Modifier.align(Alignment.Center)
@@ -3013,6 +3356,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
         gUsuarioAsignado = param3 ?: gUsuarioAsignado
         gGrupoBodega = param4 ?: gGrupoBodega
 
+        Log.d("*MAKITA*", "rtercera pantalla: ")
 
         Column(
             modifier = Modifier
@@ -3395,7 +3739,7 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
                         modifier = Modifier
                             .width(150.dp)
                             .height(80.dp)
-                            .border(2.dp, Color.Black, shape = RoundedCornerShape(4.dp))
+                            .border(2.dp, Color.Black, shape = RectangleShape)
                             .focusRequester(cantidadFocusRequester),
                         textStyle = TextStyle(
                             fontSize = 24.sp,
@@ -3476,8 +3820,11 @@ fun TerceraScreen(navController: NavController, param: String, param2: String, p
                             if (extractedText.isNotEmpty()) {
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
+
                                         val FechaFija = formatoFechaSS(System.currentTimeMillis())
                                         val Usuario = gnombreDispositivo
+
+                                        ///fechainventario/:item/:ubicacion/:usuario
 
                                         val response33 = apiService.validarUbicacionProducto(
                                             FechaFija,
@@ -4531,7 +4878,7 @@ fun QuintaScreen(
                                                             Empresa = "MAKITA",
                                                             Agno = gyear.toString(),
                                                             Mes = gmonth.toString(),
-                                                            FechaInventario = gFechaInventario,
+                                                            FechaInventario = FechaFija,
                                                             TipoInventario = "RECONTEO",
                                                             NumeroReconteo = item.numeroreconteo,
                                                             NumeroLocal = gLocal,

@@ -51,7 +51,8 @@ data class RegistraInventarioRequest
     val NombreDispositivo : String,
     val GrupoBodega : String
 
- )
+
+)
 
 data class RegistraReconteoRequest
     (
@@ -147,7 +148,8 @@ data class Item(
 
 data class GrupoBodegaResponse(
     val GrupoBodega: String,
-    val NombreGrupoBodega: String
+    val NombreGrupoBodega: String,
+    val bodegaSAP : String?
 
 )
 
@@ -209,6 +211,14 @@ data class ItemStockResponse(
 
 )
 
+data class BinUbicacionResponse(
+    val success: Boolean,
+    val binAbs: Int?,
+    val binCode: String?,
+    val whsCode: String?,
+    val message: String?
+)
+
 interface ApiService
 {
 
@@ -224,7 +234,7 @@ interface ApiService
         ) : ResponseUsuario
 
 
-    @POST("api/insertar-inventario")
+    @POST("api/insertar-inventario-final")
     suspend fun insertarinventario(@Body request: RegistraInventarioRequest): Response<Unit>
 
     @POST("api/insertar-inventario-reconteo")
@@ -234,7 +244,7 @@ interface ApiService
     //@GET("api/insertar-inventario/{tipoinventario}/{tipoitem}")
     //suspend fun obtenerUltimaUbicacion(@Path("tipoinventario") tipoinventario: String) : List<UltimaResponse>
 
-    @GET("api/insertar-inventario/{tipoinventario}/{tipoitem}/{usuario}/{fechainventario}/{bodega}")
+    @GET("api/insertar-inventario-ultima/{tipoinventario}/{tipoitem}/{usuario}/{fechainventario}/{bodega}")
     suspend fun obtenerUltimaUbicacion(
         @Path("tipoinventario") tipoinventario: String,
         @Path("tipoitem") tipoitem: String,
@@ -244,7 +254,22 @@ interface ApiService
     ): List<UltimaResponse>
 
 
-    @GET("api/insertar-inventario/{fechainventario}/{item}/{ubicacion}/{usuario}")
+    @GET("api/validar-ubicacion/{bodega}/{ubicacion}")
+    suspend fun validarUbicacionBodega(
+        @Path("bodega") bodega: String,
+        @Path("ubicacion") ubicacion: String
+    ): String
+
+
+    @GET("api/obtener-bin-ubicacion/{bodega}/{ubicacion}")
+    suspend fun obtenerBinUbicacion(
+        @Path("bodega") bodega: String,
+        @Path("ubicacion") ubicacion: String
+    ): BinUbicacionResponse
+
+
+
+    @GET("api/insertar-inventario-validar/{fechainventario}/{item}/{ubicacion}/{usuario}")
     suspend fun validarUbicacionProducto(
         @Path("fechainventario") FechaInventario: String,
         @Path("item") Item: String,
